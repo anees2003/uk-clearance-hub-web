@@ -1,7 +1,7 @@
+export { HomePage } from './HomePage';
 export { BedDetailPage } from './BedDetailPage';
 export { PlaceholderPage } from './PlaceholderPage';
 export {
-  HomePage,
   ClearanceDealsPage,
   MattressGuidePage,
   BedSizeGuidePage,

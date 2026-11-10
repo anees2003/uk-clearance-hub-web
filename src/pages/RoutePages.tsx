@@ -1,7 +1,6 @@
 import React from 'react';
 import { PlaceholderPage } from './PlaceholderPage';
 
-export const HomePage: React.FC = () => <PlaceholderPage routeKey="/" />;
 export const ClearanceDealsPage: React.FC = () => <PlaceholderPage routeKey="/clearance-deals" />;
 export const MattressGuidePage: React.FC = () => <PlaceholderPage routeKey="/mattress-guide" />;
 export const BedSizeGuidePage: React.FC = () => <PlaceholderPage routeKey="/bed-size-guide" />;

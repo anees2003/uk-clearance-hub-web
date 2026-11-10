@@ -1,13 +1,22 @@
-/**
- * UK Clearance Hub — 3D Scene Foundation (/src/three)
- * Step 1 foundation placeholder. 3D scene and Bed 07 model (Doaa Sheha, CC BY 4.0)
- * will be implemented in subsequent steps.
- */
-
-export interface SceneCameraTarget {
-  position: [number, number, number];
-  lookAt: [number, number, number];
-}
+export { MODEL_URL } from './modelUrl';
+export {
+  EXPECTED_BED_NODE_MAP,
+  BED_PART_KEYS,
+  EXPECTED_BED_NODE_NAMES,
+  extractBedPartsAndTransforms,
+} from './bedParts';
+export type {
+  BedPartKey,
+  BedNodeName,
+  BedPartTransform,
+  BedPartsMap,
+  BedOriginalTransformsMap,
+  BedSetHandle,
+} from './bedParts';
+export { BedSet } from './BedSet';
+export type { BedSetProps } from './BedSet';
+export { StudioScene, useStudioProgress } from './StudioScene';
+export type { StudioSceneProps, StudioLoadingProgress } from './StudioScene';
 
 export const BED_MODEL_ATTRIBUTION = {
   title: 'Bed 07',
