@@ -1,0 +1,6 @@
+{
+  "name": "UK Clearance Hub",
+  "description": "Premium UK bedroom furniture, handcrafted beds, and orthopaedic mattresses at up to 70% off clearance prices.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

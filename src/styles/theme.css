@@ -1,0 +1,150 @@
+:root {
+  /* Core Palette */
+  --color-ivory: #F3EFE9;
+  --color-charcoal: #1C1C1E;
+  --color-clearance-red: #C8102E;
+  --color-soft-oak: #B89B72;
+  --color-warm-grey: #8A8580;
+  --color-line: rgba(28, 28, 30, 0.12);
+
+  /* Typography Families */
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Fluid Type Scale */
+  --text-display: clamp(3.5rem, 8.5vw, 9rem);
+  --text-h1: clamp(2.5rem, 5.5vw, 5.25rem);
+  --text-h2: clamp(2rem, 4vw, 3.75rem);
+  --text-h3: clamp(1.375rem, 2.2vw, 2.125rem);
+  --text-body: clamp(1rem, 1.05vw, 1.125rem);
+  --text-small: clamp(0.8125rem, 0.9vw, 0.9375rem);
+  --text-eyebrow: clamp(0.6875rem, 0.8vw, 0.75rem);
+
+  /* Layout & Spacing */
+  --section-padding: clamp(6rem, 10vw, 12rem);
+  --container-max: 1440px;
+  --grid-gutter: 24px;
+}
+
+/* Typography Scale Utilities */
+.type-display {
+  font-family: var(--font-serif);
+  font-size: var(--text-display);
+  line-height: 0.94;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+  text-wrap: balance;
+}
+
+.type-h1 {
+  font-family: var(--font-serif);
+  font-size: var(--text-h1);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  font-weight: 400;
+  text-wrap: balance;
+}
+
+.type-h2 {
+  font-family: var(--font-serif);
+  font-size: var(--text-h2);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+.type-h3 {
+  font-family: var(--font-serif);
+  font-size: var(--text-h3);
+  line-height: 1.18;
+  letter-spacing: -0.005em;
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+.type-body {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.65;
+  font-weight: 400;
+}
+
+.type-small {
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.type-eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--text-eyebrow);
+  line-height: 1.2;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Layout & Spacing Utilities */
+.section-padding {
+  padding-top: var(--section-padding);
+  padding-bottom: var(--section-padding);
+}
+
+.container-editorial {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(1.5rem, 4vw, 4rem);
+  padding-right: clamp(1.5rem, 4vw, 4rem);
+}
+
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--grid-gutter);
+}
+
+/* Animated Underline for Navigation Links */
+.nav-link-underline {
+  position: relative;
+}
+
+.nav-link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 1px;
+  background-color: var(--color-charcoal);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-link-underline:hover::after,
+.nav-link-underline[aria-current="page"]::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+/* Lenis Recommended Base CSS */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
