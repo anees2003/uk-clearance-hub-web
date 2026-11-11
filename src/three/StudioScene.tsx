@@ -8,12 +8,11 @@ import React, {
 import * as THREE from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import {
-  AccumulativeShadows,
+  ContactShadows,
   Environment,
   Lightformer,
   OrbitControls,
   PerspectiveCamera,
-  RandomizedLight,
   useProgress,
 } from '@react-three/drei';
 import {
@@ -77,6 +76,10 @@ export interface StudioSceneProps {
   enableOrbitControls?: boolean;
   /** Show subtle loading percentage indicator in the corner */
   showCornerProgress?: boolean;
+  /** Whether parts start assembled (true) or hidden for scroll assembly (false) */
+  initialAssembled?: boolean;
+  /** Callback fired once the BedSet model and parts are ready */
+  onBedSetReady?: (handle: BedSetHandle) => void;
   /** Optional callback fired when loading progress updates */
   onProgressChange?: (state: StudioLoadingProgress) => void;
   /** Optional className for the outer wrapper */
@@ -102,26 +105,6 @@ const ProgressBridge: React.FC<{
   return null;
 };
 
-const InvalidateOnLoad: React.FC = () => {
-  const invalidate = useThree((state) => state.invalidate);
-  const { active, loaded } = useProgress();
-
-  useEffect(() => {
-    invalidate();
-    const timers = [
-      window.setTimeout(() => invalidate(), 100),
-      window.setTimeout(() => invalidate(), 300),
-      window.setTimeout(() => invalidate(), 600),
-      window.setTimeout(() => invalidate(), 1000),
-    ];
-    return () => {
-      timers.forEach((t) => window.clearTimeout(t));
-    };
-  }, [invalidate, active, loaded]);
-
-  return null;
-};
-
 const StudioLightingAndEnvironment: React.FC = () => {
   return (
     <>
@@ -131,7 +114,7 @@ const StudioLightingAndEnvironment: React.FC = () => {
         intensity={0.85}
         position={[3, 5, 2.5]}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={isSoftwareGl ? [512, 512] : [2048, 2048]}
         shadow-bias={-0.0001}
         shadow-normalBias={0.02}
         shadow-camera-near={0.5}
@@ -208,29 +191,38 @@ const StudioFloor: React.FC = () => {
         receiveShadow
       >
         <planeGeometry args={[60, 60]} />
-        <shadowMaterial transparent opacity={0.18} color="#26211C" />
+        <shadowMaterial transparent opacity={0.16} color="#26211C" />
       </mesh>
 
-      {/* Soft accumulated studio shadows grounded at y = 0 */}
-      <AccumulativeShadows
-        temporal={!isSoftwareGl}
-        frames={isSoftwareGl ? 3 : 60}
-        alphaTest={0.85}
-        opacity={0.8}
-        scale={12}
-        color="#38312B"
+      {/* Real-time dynamic ContactShadows updating as parts assemble */}
+      <ContactShadows
         position={[0, 0.001, 0]}
-      >
-        <RandomizedLight
-          amount={8}
-          radius={4}
-          ambient={0.5}
-          position={[3, 5, -2]}
-          bias={-0.0005}
-        />
-      </AccumulativeShadows>
+        opacity={0.6}
+        blur={2.5}
+        far={3}
+        resolution={isSoftwareGl ? 128 : 1024}
+        scale={12}
+        color="#2B2520"
+      />
     </group>
   );
+};
+
+const InvalidateOnLoad: React.FC = () => {
+  const invalidate = useThree((state) => state.invalidate);
+  const { active, loaded } = useProgress();
+
+  useEffect(() => {
+    invalidate();
+    const timers = [
+      window.setTimeout(() => invalidate(), 100),
+      window.setTimeout(() => invalidate(), 350),
+      window.setTimeout(() => invalidate(), 700),
+    ];
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [invalidate, active, loaded]);
+
+  return null;
 };
 
 const StudioPostprocessing: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
@@ -264,7 +256,7 @@ const StudioPostprocessing: React.FC<{ isMobile: boolean }> = ({ isMobile }) => 
         ref={handleN8AORef}
         aoRadius={0.5}
         intensity={1.5}
-        halfRes={isMobile}
+        halfRes={isMobile || isSoftwareGl}
       />
       <Bloom
         intensity={0.15}
@@ -304,6 +296,8 @@ export const StudioScene = forwardRef<BedSetHandle, StudioSceneProps>(
     {
       enableOrbitControls = false,
       showCornerProgress = false,
+      initialAssembled = true,
+      onBedSetReady,
       onProgressChange,
       className = 'w-full h-full',
     },
@@ -323,6 +317,7 @@ export const StudioScene = forwardRef<BedSetHandle, StudioSceneProps>(
     return (
       <div
         data-testid="studio-scene-container"
+        data-mobile-camera={isMobile ? 'true' : 'false'}
         className={`relative bg-[#F3EFE9] ${className}`.trim()}
       >
         <ProgressBridge onProgressChange={onProgressChange} />
@@ -332,6 +327,7 @@ export const StudioScene = forwardRef<BedSetHandle, StudioSceneProps>(
           shadows={{ type: THREE.PCFShadowMap }}
           frameloop={isSoftwareGl ? 'demand' : 'always'}
           dpr={isSoftwareGl ? 1 : [1, 2]}
+          style={{ pointerEvents: enableOrbitControls ? 'auto' : 'none' }}
           gl={{
             antialias: false,
             toneMapping: THREE.ACESFilmicToneMapping,
@@ -343,19 +339,21 @@ export const StudioScene = forwardRef<BedSetHandle, StudioSceneProps>(
           <color attach="background" args={['#F3EFE9']} />
           <fog attach="fog" args={['#F3EFE9', 10, 26]} />
 
-          {/* Product-photo front-three-quarter PerspectiveCamera (fov 30) */}
+          {/* PerspectiveCamera (fov 30) driven by BedSet useFrame + GSAP master timeline */}
           <PerspectiveCamera
             makeDefault
             fov={30}
-            position={[0, 1.5, 5.1]}
             near={0.1}
             far={100}
-            onUpdate={(cam) => cam.lookAt(0, 0.36, 0)}
           />
 
           <Suspense fallback={null}>
             <StudioLightingAndEnvironment />
-            <BedSet ref={ref} />
+            <BedSet
+              ref={ref}
+              initialAssembled={initialAssembled}
+              onReady={onBedSetReady}
+            />
             <StudioFloor />
             <StudioPostprocessing isMobile={isMobile} />
             <InvalidateOnLoad />
