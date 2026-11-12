@@ -34,13 +34,13 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
     align === 'center' ? 'text-center items-center mx-auto' : 'text-left items-start';
 
   return (
-    <div className={`flex flex-col gap-4 max-w-4xl ${alignClasses} ${className}`.trim()}>
+    <div className={`flex flex-col gap-3.5 max-w-4xl ${alignClasses} ${className}`.trim()}>
       {eyebrow && <Eyebrow tone={eyebrowTone}>{eyebrow}</Eyebrow>}
-      <HeadingTag className={`${sizeClassMap[size]} text-[#1C1C1E]`}>
+      <HeadingTag className={`${sizeClassMap[size]} text-text`}>
         {title}
       </HeadingTag>
       {subtitle && (
-        <p className="type-body text-[#8A8580] max-w-2xl mt-2">
+        <p className="type-body text-muted max-w-2xl mt-1">
           {subtitle}
         </p>
       )}

@@ -96,7 +96,11 @@ test('ASSEMBLY_CHAPTERS defines the 8 required chapter IDs and alternating panel
   );
   assert.deepEqual(
     completePanel.ctas?.map((cta) => cta.to),
-    ['/clearance-deals', '/bed-size-guide']
+    ['/deals?category=Home%20%26%20Living', '/bed-size-guide']
+  );
+  assert.deepEqual(
+    completePanel.ctas?.map((cta) => cta.label),
+    ['Shop Home & Living Deals', 'Bed Size Guide']
   );
 });
 

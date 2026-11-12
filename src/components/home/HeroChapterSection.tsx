@@ -195,7 +195,7 @@ export const HeroChapterSection: React.FC<HeroChapterSectionProps> = ({ id }) =>
       id={id}
       data-testid={id}
       data-hero-intro="waiting"
-      className="relative h-screen w-full overflow-hidden"
+      className="relative h-[calc(100dvh-92px)] md:h-[calc(100dvh-138px)] min-h-[560px] w-full overflow-hidden bg-hero-glow"
     >
       {/* Main Hero Content Wrapper (fades and moves up on scroll out) */}
       <div
@@ -203,30 +203,30 @@ export const HeroChapterSection: React.FC<HeroChapterSectionProps> = ({ id }) =>
         data-testid="hero-content-scroll-wrapper"
         className="w-full h-full will-change-transform"
       >
-        <Container className="relative h-full flex flex-col justify-between pt-28 pb-16 md:pt-32 md:pb-20">
+        <Container className="relative h-full flex flex-col justify-between pt-5 pb-24 sm:pb-24 md:pt-8 md:pb-20">
           {/* Top Row: Top-right small info block */}
           <div className="w-full flex justify-end">
             <div
               ref={infoBlockRef}
               data-testid="hero-info-block"
-              className="inline-flex items-center gap-2.5 text-xs font-sans text-[#1C1C1E]/85 tracking-wide will-change-transform"
+              className="inline-flex items-center gap-2 text-xs font-sans font-medium text-text tracking-wide will-change-transform"
             >
-              <span
-                aria-hidden="true"
-                className="relative flex h-2 w-2 shrink-0"
-              >
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C8102E] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C8102E]" />
-              </span>
+              <span className="text-accent font-bold">●</span>
               <span>Clearance stock updated weekly</span>
             </div>
           </div>
 
-          {/* Lower-Left Area: Display Headline + Sub text (leaves centre studio floor open) */}
+          {/* Lower-Left Area: Eyebrow + Display Headline + Sub text (leaves centre studio floor open) */}
           <div className="w-full max-w-4xl text-left mb-6 sm:mb-8">
+            <p
+              data-testid="hero-eyebrow"
+              className="type-eyebrow text-accent font-semibold mb-3"
+            >
+              Home &amp; Living
+            </p>
             <h1
               data-testid="hero-headline"
-              className="font-serif text-[clamp(3.25rem,7.8vw,8.25rem)] leading-[0.94] tracking-[-0.02em] font-normal text-[#1C1C1E]"
+              className="font-heading text-[clamp(2.35rem,5.8vw,5.75rem)] leading-[0.98] tracking-[-0.025em] font-extrabold text-text"
             >
               <span className="block overflow-hidden pb-[0.09em] -mb-[0.09em]">
                 <span
@@ -234,16 +234,16 @@ export const HeroChapterSection: React.FC<HeroChapterSectionProps> = ({ id }) =>
                   data-testid="hero-headline-line-1"
                   className="block will-change-transform"
                 >
-                  Luxury Sleep.
+                  Build your bedroom.
                 </span>
               </span>
               <span className="block overflow-hidden pb-[0.11em] -mb-[0.11em]">
                 <span
                   ref={line2InnerRef}
                   data-testid="hero-headline-line-2"
-                  className="block italic font-normal will-change-transform"
+                  className="block text-accent font-extrabold will-change-transform"
                 >
-                  Clearance Prices.
+                  For less.
                 </span>
               </span>
             </h1>
@@ -251,10 +251,10 @@ export const HeroChapterSection: React.FC<HeroChapterSectionProps> = ({ id }) =>
             <p
               ref={subTextRef}
               data-testid="hero-subtext"
-              className="mt-6 font-sans text-[#8A8580] type-body max-w-[380px] leading-relaxed will-change-transform"
+              className="mt-3 sm:mt-4 font-sans text-muted type-body max-w-[340px] sm:max-w-[440px] leading-relaxed will-change-transform"
             >
-              Premium beds, mattresses and bedroom furniture at up to 70% off.
-              Ex-display, end-of-line and overstock, delivered across the UK.
+              Beds, mattresses and bedroom furniture from trusted UK suppliers,
+              at genuine clearance prices.
             </p>
           </div>
         </Container>
@@ -270,14 +270,14 @@ export const HeroChapterSection: React.FC<HeroChapterSectionProps> = ({ id }) =>
           ref={indicatorInnerRef}
           className="flex flex-col items-center gap-3 will-change-transform"
         >
-          <span className="type-eyebrow text-[#1C1C1E]/75 whitespace-nowrap">
+          <span className="type-eyebrow text-text/80 whitespace-nowrap">
             Scroll to build your bed
           </span>
           <div
             aria-hidden="true"
-            className="h-10 w-px bg-[rgba(28,28,30,0.14)] overflow-hidden relative"
+            className="h-10 w-px bg-border-strong overflow-hidden relative"
           >
-            <span className="block w-full h-4 bg-[#1C1C1E] hero-scroll-line-segment" />
+            <span className="block w-full h-4 bg-accent hero-scroll-line-segment" />
           </div>
         </div>
       </div>

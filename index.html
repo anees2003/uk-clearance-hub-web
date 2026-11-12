@@ -1,28 +1,79 @@
 <!doctype html>
-<html lang="en-GB">
+<html lang="en-GB" data-theme="dark" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UK Clearance Hub — Luxury Beds, Mattresses & Bedroom Furniture</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Clearance Deals from Trusted UK Suppliers | UK Clearance Hub</title>
     <meta
       name="description"
-      content="Premium UK bedroom furniture, handcrafted beds, and orthopaedic mattresses at up to 70% off clearance prices."
+      content="Discover genuine UK clearance deals across Electronics & Gadgets, Home Appliances, and Home & Living. Fulfilled directly by vetted UK suppliers in GBP (£)."
     />
-    <meta property="og:title" content="UK Clearance Hub — Luxury Beds, Mattresses & Bedroom Furniture" />
+    <link rel="canonical" href="https://ukclearancehub.co.uk/" />
+    <meta name="robots" content="index,follow" />
+    <meta property="og:title" content="Clearance Deals from Trusted UK Suppliers | UK Clearance Hub" />
     <meta
       property="og:description"
-      content="Premium UK bedroom furniture, handcrafted beds, and orthopaedic mattresses at up to 70% off clearance prices."
+      content="Discover genuine UK clearance deals across Electronics & Gadgets, Home Appliances, and Home & Living. Fulfilled directly by vetted UK suppliers in GBP (£)."
     />
+    <meta property="og:url" content="https://ukclearancehub.co.uk/" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="UK Clearance Hub" />
+    <meta
+      property="og:image"
+      content="https://cdn.jsdelivr.net/gh/anees2003/uk-clearance-hub@main/uk-clearance-hub-logo.png"
+    />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Clearance Deals from Trusted UK Suppliers | UK Clearance Hub" />
+    <meta
+      name="twitter:description"
+      content="Discover genuine UK clearance deals across Electronics & Gadgets, Home Appliances, and Home & Living. Fulfilled directly by vetted UK suppliers in GBP (£)."
+    />
+    <meta
+      name="twitter:image"
+      content="https://cdn.jsdelivr.net/gh/anees2003/uk-clearance-hub@main/uk-clearance-hub-logo.png"
+    />
+    <script>
+      (function () {
+        var origWarn = console.warn;
+        console.warn = function () {
+          if (
+            arguments.length > 0 &&
+            typeof arguments[0] === 'string' &&
+            arguments[0].indexOf('THREE.Clock: This module has been deprecated') !== -1
+          ) {
+            return;
+          }
+          return origWarn.apply(console, arguments);
+        };
+        try {
+          var saved = localStorage.getItem('uk-clearance-hub-theme');
+          var theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+          document.documentElement.style.colorScheme = theme;
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://cdn.jsdelivr.net/gh/anees2003/uk-clearance-hub@main/uk-clearance-hub-icon.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://cdn.jsdelivr.net/gh/anees2003/uk-clearance-hub@main/uk-clearance-hub-icon.png"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
   </head>
-  <body class="bg-[#F3EFE9] text-[#1C1C1E] antialiased selection:bg-[#C8102E] selection:text-[#F3EFE9]">
+  <body class="bg-bg text-text antialiased selection:bg-primary selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,175 +1,674 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, X, ArrowUpRight } from 'lucide-react';
-import { HEADER_NAV_LINKS, computeHeaderVisibility } from '../../data/navigation';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Menu,
+  X,
+  Search,
+  MessageCircle,
+  Truck,
+  ShieldCheck,
+  ArrowRight,
+  Sun,
+  Moon,
+} from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
+import {
+  BRAND_ICON_URL,
+  BRAND_WHATSAPP_DISPLAY,
+  BRAND_WHATSAPP_URL,
+  HEADER_CATEGORIES,
+  buildDealsSearchUrl,
+} from '../../data/brand';
+import { HEADER_HELP_LINKS } from '../../data/navigation';
+import { useModalFocusTrap } from '../../utils/useModalFocusTrap';
 import { Container } from '../ui/Container';
 
+export const MOBILE_MENU_EVENT = 'uk-clearance-hub:mobile-menu';
+
+const ThemeToggleButton: React.FC<{
+  testId: string;
+  showLabel?: boolean;
+  className?: string;
+}> = ({ testId, showLabel = false, className = '' }) => {
+  const { theme, toggleTheme, toggleAriaLabel } = useTheme();
+  const isDark = theme === 'dark';
+
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-label={toggleAriaLabel}
+      title={toggleAriaLabel}
+      onClick={(e) => toggleTheme(e)}
+      className={`group relative inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-2 hover:border-primary/50 hover:bg-surface text-text cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus active:scale-[0.96] ${
+        showLabel ? 'px-3.5 py-2.5 min-h-[44px] text-xs font-semibold' : 'w-11 h-11'
+      } ${className}`.trim()}
+    >
+      <span className="relative flex items-center justify-center w-5 h-5">
+        <Sun
+          aria-hidden="true"
+          className={`w-4 h-4 text-amber absolute transition-all duration-300 ${
+            isDark
+              ? 'opacity-100 rotate-0 scale-100'
+              : 'opacity-0 -rotate-90 scale-50'
+          }`}
+        />
+        <Moon
+          aria-hidden="true"
+          className={`w-4 h-4 text-primary absolute transition-all duration-300 ${
+            isDark
+              ? 'opacity-0 rotate-90 scale-50'
+              : 'opacity-100 rotate-0 scale-100'
+          }`}
+        />
+      </span>
+      {showLabel && (
+        <span>{isDark ? 'Switch to light theme' : 'Switch to dark theme'}</span>
+      )}
+    </button>
+  );
+};
+
 export const Header: React.FC = () => {
-  const [isHidden, setIsHidden] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const lastScrollY = useRef(0);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [iconError, setIconError] = useState(false);
+  const [hoveredCatIndex, setHoveredCatIndex] = useState<number | null>(null);
+  const [underlineStyle, setUnderlineStyle] = useState<{
+    left: number;
+    width: number;
+    opacity: number;
+  }>({ left: 0, width: 0, opacity: 0 });
+
+  const categoryNavRef = useRef<HTMLElement | null>(null);
+  const categoryLinkRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useModalFocusTrap(mobileOpen, mobileMenuRef, () => setMobileOpen(false));
+
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  // Close mobile menu on route change
+  // Keep search input synced with ?q= when on /deals
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
+    const q = searchParams.get('q') ?? '';
+    setSearchQuery(q);
+  }, [searchParams, location.pathname]);
 
-  // Prevent body scroll when full-screen mobile menu is open
+  // Close mobile menu and mobile search panel on route change
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+    setMobileOpen(false);
+    setMobileSearchOpen(false);
+  }, [location.pathname, location.search]);
+
+  // Broadcast mobile menu open state so FloatingWhatsAppButton hides when menu is open
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.dataset.mobileMenuOpen = mobileOpen ? 'true' : 'false';
+      document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent(MOBILE_MENU_EVENT, { detail: { open: mobileOpen } })
+      );
     }
     return () => {
-      document.body.style.overflow = '';
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = '';
+      }
     };
-  }, [mobileMenuOpen]);
+  }, [mobileOpen]);
 
-  // Scroll direction tracking for hide on scroll down, show on scroll up
   useEffect(() => {
     const handleScroll = () => {
-      const currentY = window.scrollY;
-      setIsScrolled(currentY > 24);
-      setIsHidden((prevHidden) =>
-        computeHeaderVisibility(currentY, lastScrollY.current, prevHidden)
-      );
-      lastScrollY.current = currentY;
+      setScrolled(window.scrollY > 12);
     };
-
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const headerTransform =
-    isHidden && !mobileMenuOpen ? '-translate-y-full' : 'translate-y-0';
+  const isCategoryActive = useCallback(
+    (item: (typeof HEADER_CATEGORIES)[number]): boolean => {
+      const currentCategory = searchParams.get('category');
+      if (item.to === '/home-living') {
+        return location.pathname === '/home-living';
+      }
+      if (item.categoryParam) {
+        return (
+          (location.pathname === '/deals' ||
+            location.pathname === '/clearance-deals') &&
+          currentCategory === item.categoryParam
+        );
+      }
+      if (item.to === '/deals') {
+        return (
+          (location.pathname === '/deals' ||
+            location.pathname === '/clearance-deals') &&
+          !currentCategory
+        );
+      }
+      return location.pathname === item.to;
+    },
+    [location.pathname, searchParams]
+  );
 
-  const surfaceBackdrop =
-    isScrolled && !mobileMenuOpen
-      ? 'bg-[#F3EFE9]/85 backdrop-blur-md border-b border-[rgba(28,28,30,0.12)]'
-      : 'bg-transparent border-b border-transparent';
+  // Measure active or hovered category link so the underline slides smoothly between items
+  useEffect(() => {
+    const updateSlidingUnderline = () => {
+      const navEl = categoryNavRef.current;
+      if (!navEl) return;
+
+      const activeIdx = HEADER_CATEGORIES.findIndex((c) => isCategoryActive(c));
+      const targetIdx = hoveredCatIndex !== null ? hoveredCatIndex : activeIdx;
+
+      if (targetIdx < 0) {
+        setUnderlineStyle((prev) => ({ ...prev, opacity: 0 }));
+        return;
+      }
+
+      const linkEl = categoryLinkRefs.current[targetIdx];
+      if (!linkEl) {
+        setUnderlineStyle((prev) => ({ ...prev, opacity: 0 }));
+        return;
+      }
+
+      const navRect = navEl.getBoundingClientRect();
+      const linkRect = linkEl.getBoundingClientRect();
+      setUnderlineStyle({
+        left: linkRect.left - navRect.left,
+        width: linkRect.width,
+        opacity: 1,
+      });
+    };
+
+    updateSlidingUnderline();
+    window.addEventListener('resize', updateSlidingUnderline, { passive: true });
+    return () => window.removeEventListener('resize', updateSlidingUnderline);
+  }, [hoveredCatIndex, isCategoryActive, location.pathname, location.search]);
+
+  const handleSearchSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const targetUrl = buildDealsSearchUrl(searchQuery);
+    setMobileOpen(false);
+    setMobileSearchOpen(false);
+    navigate(targetUrl);
+  };
 
   return (
     <>
       <header
         data-testid="site-header"
-        data-hidden={isHidden && !mobileMenuOpen ? 'true' : 'false'}
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-out ${headerTransform} ${surfaceBackdrop}`}
+        data-scrolled={scrolled ? 'true' : 'false'}
+        className={`sticky top-0 left-0 right-0 z-40 border-b border-border transition-[background-color,box-shadow,border-color,backdrop-filter] duration-300 ${
+          scrolled
+            ? 'bg-surface/90 backdrop-blur-md shadow-theme'
+            : 'bg-surface'
+        }`}
       >
-        <Container className="flex items-center justify-between gap-3 sm:gap-6 lg:gap-8 h-20">
-          {/* Zone 1: Left Serif Wordmark */}
+        {/* 1. Top Utility Bar (Deep Navy / Elevated Dark Bar) */}
+        <div
+          data-testid="header-utility-bar"
+          className="bg-navy-deep text-white text-xs py-2 border-b border-white/8"
+        >
+          <Container className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
+            <div className="flex items-center gap-4 md:gap-6">
+              <span className="inline-flex items-center gap-1.5 font-medium text-white/95">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber shrink-0" aria-hidden="true" />
+                <span>Clearance deals from trusted UK suppliers</span>
+              </span>
+              <span className="hidden md:inline-flex items-center gap-1.5 text-white/80">
+                <Truck className="w-3.5 h-3.5 text-primary shrink-0" aria-hidden="true" />
+                <span>Delivery handled by suppliers</span>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4 md:gap-6 ml-auto">
+              <div className="hidden lg:flex items-center gap-5 text-white/80">
+                <Link to="/how-it-works" className="hover:text-white">
+                  How it works
+                </Link>
+                <Link to="/faq" className="hover:text-white">
+                  FAQ
+                </Link>
+                <Link to="/contact" className="hover:text-white">
+                  Contact
+                </Link>
+              </div>
+              <a
+                href={BRAND_WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="header-utility-whatsapp"
+                className="inline-flex items-center gap-1.5 font-medium text-white hover:text-amber whitespace-nowrap"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-success shrink-0" aria-hidden="true" />
+                <span>WhatsApp: {BRAND_WHATSAPP_DISPLAY}</span>
+              </a>
+            </div>
+          </Container>
+        </div>
+
+        {/* 2. Main Header Row: Logo left + Search Bar centre (max-w 560px) + Theme Toggle & Orange "Shop Deals" CTA right */}
+        <Container className="py-3 md:py-3.5 flex items-center justify-between gap-4 md:gap-6">
+          {/* Brand Wordmark & ~40px Icon */}
           <Link
             to="/"
-            className="font-serif text-[1.35rem] sm:text-2xl md:text-[1.7rem] font-medium tracking-tight text-[#1C1C1E] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1C1C1E]"
+            data-testid="header-brand-link"
+            className="inline-flex items-center gap-2.5 shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus rounded-sm"
           >
-            UK Clearance Hub
+            {!iconError && (
+              <img
+                src={BRAND_ICON_URL}
+                alt=""
+                width={66}
+                height={40}
+                decoding="async"
+                onError={() => setIconError(true)}
+                className="h-9 sm:h-10 w-auto object-contain shrink-0"
+              />
+            )}
+            <span className="font-heading text-lg sm:text-xl md:text-[1.375rem] font-extrabold tracking-[-0.02em] whitespace-nowrap">
+              <span className="text-text">UK Clearance </span>
+              <span className="text-accent">Hub</span>
+            </span>
           </Link>
 
-          {/* Zone 2: Centre Navigation Links (Desktop) */}
-          <nav
-            aria-label="Primary navigation"
-            className="hidden lg:flex items-center gap-7 xl:gap-9"
+          {/* Desktop Centre Search Bar (max-width 560px, submits to /deals?q=...) */}
+          <form
+            onSubmit={handleSearchSubmit}
+            role="search"
+            data-testid="header-search-form"
+            className="hidden md:flex flex-1 max-w-[560px] mx-auto relative items-center"
           >
-            {HEADER_NAV_LINKS.map((item) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                className={({ isActive }) =>
-                  `nav-link-underline text-[0.875rem] font-normal tracking-[0.02em] transition-colors duration-200 whitespace-nowrap shrink-0 ${
-                    isActive
-                      ? 'text-[#1C1C1E] font-medium'
-                      : 'text-[#1C1C1E]/80 hover:text-[#1C1C1E]'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Zone 3: Right Clearance Red Pill + Mobile Hamburger */}
-          <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
-            <Link
-              to="/clearance-deals"
-              className="inline-flex items-center gap-1.5 bg-[#C8102E] text-[#F3EFE9] rounded-full px-3 sm:px-4 py-1 sm:py-1.5 text-[0.65rem] sm:text-[0.75rem] font-medium tracking-[0.08em] sm:tracking-[0.12em] uppercase whitespace-nowrap shrink-0 transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8102E]"
+            <label htmlFor="header-search-input" className="sr-only">
+              Search clearance deals
+            </label>
+            <Search
+              aria-hidden="true"
+              className="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+            />
+            <input
+              id="header-search-input"
+              data-testid="header-search-input"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search clearance deals…"
+              className="w-full bg-bg border border-border-strong rounded-lg pl-11 pr-24 py-2.5 text-sm text-text placeholder:text-muted focus:bg-surface focus:border-primary focus:ring-2 focus:ring-focus/25 focus:outline-none"
+            />
+            <button
+              type="submit"
+              data-testid="header-search-submit"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-md cursor-pointer active:scale-[0.98]"
             >
-              <span>Up to 70% off</span>
+              Search
+            </button>
+          </form>
+
+          {/* Desktop Right Actions: Theme Switcher + Orange "Shop Deals" Button */}
+          <div className="hidden md:flex items-center gap-3 shrink-0">
+            <ThemeToggleButton testId="theme-toggle-desktop" />
+
+            <Link
+              to="/deals"
+              data-testid="header-shop-deals-btn"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-lg bg-accent hover:bg-accent-hover hover:-translate-y-0.5 active:scale-[0.98] text-white font-heading font-bold text-sm tracking-tight whitespace-nowrap shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              <span>Shop Deals</span>
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>
+          </div>
+
+          {/* Mobile Controls: Theme Toggle + Search Icon + Menu Toggle Button */}
+          <div className="flex md:hidden items-center gap-1.5">
+            <ThemeToggleButton testId="theme-toggle-mobile-header" />
 
             <button
               type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-fullscreen-menu"
-              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-              className="lg:hidden inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 text-[#1C1C1E] border border-[rgba(28,28,30,0.12)] transition-colors hover:bg-[#1C1C1E]/5 focus-visible:outline-2 focus-visible:outline-[#1C1C1E] cursor-pointer shrink-0"
+              aria-label={mobileSearchOpen ? 'Close search bar' : 'Open search bar'}
+              aria-expanded={mobileSearchOpen}
+              data-testid="header-mobile-search-btn"
+              onClick={() => setMobileSearchOpen((prev) => !prev)}
+              className="inline-flex items-center justify-center w-11 h-11 rounded-lg text-text hover:bg-surface-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
-              {mobileMenuOpen ? (
-                <X className="w-5 h-5" aria-hidden="true" />
+              <Search className="w-5 h-5" aria-hidden="true" />
+            </button>
+
+            <button
+              type="button"
+              aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileOpen}
+              data-testid="header-mobile-menu-btn"
+              onClick={() => setMobileOpen((prev) => !prev)}
+              className="inline-flex items-center justify-center w-11 h-11 rounded-lg text-text hover:bg-surface-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              {mobileOpen ? (
+                <X className="w-6 h-6" aria-hidden="true" />
               ) : (
-                <Menu className="w-5 h-5" aria-hidden="true" />
+                <Menu className="w-6 h-6" aria-hidden="true" />
               )}
             </button>
           </div>
         </Container>
-      </header>
 
-      {/* Mobile Full-Screen Menu with Staggered Links */}
-      <div
-        id="mobile-fullscreen-menu"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Mobile navigation menu"
-        aria-hidden={!mobileMenuOpen}
-        className={`fixed inset-0 z-30 bg-[#F3EFE9] flex flex-col justify-between pt-28 pb-10 px-6 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden ${
-          mobileMenuOpen
-            ? 'opacity-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 -translate-y-4 pointer-events-none'
-        }`}
-      >
-        <div className="flex flex-col gap-2 border-t border-[rgba(28,28,30,0.12)] pt-8">
-          <p className="type-eyebrow text-[#8A8580] mb-4">Directory</p>
-          <nav aria-label="Mobile navigation" className="flex flex-col">
-            {HEADER_NAV_LINKS.map((item, idx) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                style={{
-                  transitionDelay: mobileMenuOpen ? `${80 + idx * 55}ms` : '0ms',
-                }}
-                className={({ isActive }) =>
-                  `group flex items-center justify-between py-3.5 border-b border-[rgba(28,28,30,0.12)] font-serif text-3xl sm:text-4xl tracking-tight transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    mobileMenuOpen
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 translate-y-4'
-                  } ${isActive ? 'text-[#C8102E]' : 'text-[#1C1C1E]'}`
-                }
-              >
-                <span>{item.label}</span>
-                <ArrowUpRight
-                  aria-hidden="true"
-                  className="w-5 h-5 text-[#8A8580] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[#1C1C1E]"
-                />
-              </NavLink>
-            ))}
-          </nav>
-        </div>
-
+        {/* Animated Collapsible Mobile Search Bar */}
         <div
-          style={{
-            transitionDelay: mobileMenuOpen ? '420ms' : '0ms',
-          }}
-          className={`flex flex-col gap-3 pt-6 transition-all duration-500 ${
-            mobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          aria-hidden={!mobileSearchOpen}
+          className={`md:hidden overflow-hidden transition-[max-height,opacity] duration-300 ${
+            mobileSearchOpen
+              ? 'max-h-24 opacity-100 border-t border-border bg-bg-elevated'
+              : 'max-h-0 opacity-0 pointer-events-none'
           }`}
         >
-          <div className="flex items-center justify-between text-xs text-[#8A8580]">
-            <span>UK Mainland Delivery</span>
-            <span>NBF Approved Craftsmanship</span>
+          <Container className="py-3">
+            <form onSubmit={handleSearchSubmit} role="search" className="relative flex items-center">
+              <label htmlFor="mobile-inline-search-input" className="sr-only">
+                Search clearance deals
+              </label>
+              <Search
+                aria-hidden="true"
+                className="w-4 h-4 text-muted absolute left-3.5 pointer-events-none"
+              />
+              <input
+                id="mobile-inline-search-input"
+                type="search"
+                tabIndex={mobileSearchOpen ? 0 : -1}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search clearance deals…"
+                className="w-full bg-surface border border-border-strong rounded-lg pl-10 pr-20 py-2.5 min-h-[44px] text-base text-text placeholder:text-muted focus:border-primary focus:outline-none"
+              />
+              <button
+                type="submit"
+                tabIndex={mobileSearchOpen ? 0 : -1}
+                className="absolute right-1.5 px-3.5 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-md"
+              >
+                Go
+              </button>
+            </form>
+          </Container>
+        </div>
+
+        {/* 3. Desktop Category Row with Smooth Sliding Underline */}
+        <div
+          data-testid="header-category-row"
+          className="hidden md:block border-t border-border bg-surface/95"
+        >
+          <Container className="flex items-center justify-between gap-6">
+            <nav
+              ref={categoryNavRef}
+              aria-label="Clearance categories"
+              onMouseLeave={() => setHoveredCatIndex(null)}
+              className="relative flex items-center gap-6"
+            >
+              {HEADER_CATEGORIES.map((item, idx) => {
+                const active = isCategoryActive(item);
+                return (
+                  <Link
+                    key={item.label}
+                    ref={(el) => {
+                      categoryLinkRefs.current[idx] = el;
+                    }}
+                    to={item.to}
+                    onMouseEnter={() => setHoveredCatIndex(idx)}
+                    data-testid={`header-category-link-${item.label}`}
+                    data-active={active ? 'true' : 'false'}
+                    className={`group relative py-3 text-sm font-medium whitespace-nowrap shrink-0 ${
+                      active
+                        ? 'text-primary font-semibold'
+                        : 'text-text hover:text-primary'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+
+              {/* Smooth Sliding Category Indicator */}
+              <span
+                aria-hidden="true"
+                data-testid="header-category-sliding-underline"
+                className="pointer-events-none absolute bottom-0 h-[2.5px] bg-accent rounded-full transition-[transform,width,opacity] duration-300"
+                style={{
+                  transform: `translateX(${underlineStyle.left}px)`,
+                  width: `${underlineStyle.width}px`,
+                  opacity: underlineStyle.opacity,
+                }}
+              />
+            </nav>
+
+            {/* Quick Guides & Informative Links */}
+            <div className="hidden lg:flex items-center gap-5 text-xs font-medium text-muted">
+              <Link
+                to="/mattress-guide"
+                className={`hover:text-text whitespace-nowrap ${
+                  location.pathname === '/mattress-guide'
+                    ? 'text-primary font-semibold'
+                    : ''
+                }`}
+              >
+                Mattress Guide
+              </Link>
+              <Link
+                to="/bed-size-guide"
+                className={`hover:text-text whitespace-nowrap ${
+                  location.pathname === '/bed-size-guide'
+                    ? 'text-primary font-semibold'
+                    : ''
+                }`}
+              >
+                Bed Size Guide
+              </Link>
+              <Link
+                to="/delivery-returns"
+                className={`hover:text-text whitespace-nowrap ${
+                  location.pathname === '/delivery-returns'
+                    ? 'text-primary font-semibold'
+                    : ''
+                }`}
+              >
+                Delivery &amp; Returns
+              </Link>
+            </div>
+          </Container>
+        </div>
+      </header>
+
+      {/* Full-Screen Animated Mobile Menu Panel */}
+      <div
+        ref={mobileMenuRef}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!mobileOpen}
+        aria-label="Mobile navigation menu"
+        data-testid="mobile-menu-panel"
+        data-open={mobileOpen ? 'true' : 'false'}
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+        className={`fixed inset-0 z-50 bg-surface text-text flex flex-col justify-between overflow-y-auto md:hidden transition-[opacity,transform] duration-300 ${
+          mobileOpen
+            ? 'opacity-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 -translate-y-3 pointer-events-none'
+        }`}
+      >
+        {/* Mobile Panel Top Header */}
+        <div>
+          <div className="bg-navy-deep text-white py-2.5 text-xs">
+            <Container className="flex items-center justify-between gap-4">
+              <span>Clearance deals from trusted UK suppliers</span>
+              <a
+                href={BRAND_WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                tabIndex={mobileOpen ? 0 : -1}
+                className="text-amber font-medium whitespace-nowrap"
+              >
+                WhatsApp Us
+              </a>
+            </Container>
           </div>
+
+          <div className="py-4 border-b border-border">
+            <Container className="flex items-center justify-between gap-4">
+              <Link
+                to="/"
+                tabIndex={mobileOpen ? 0 : -1}
+                onClick={() => setMobileOpen(false)}
+                className="inline-flex items-center gap-2.5"
+              >
+                {!iconError && (
+                  <img
+                    src={BRAND_ICON_URL}
+                    alt=""
+                    width={59}
+                    height={36}
+                    decoding="async"
+                    onError={() => setIconError(true)}
+                    className="h-9 w-auto object-contain shrink-0"
+                  />
+                )}
+                <span className="font-heading text-lg font-extrabold tracking-[-0.02em]">
+                  <span className="text-text">UK Clearance </span>
+                  <span className="text-accent">Hub</span>
+                </span>
+              </Link>
+
+              <button
+                type="button"
+                tabIndex={mobileOpen ? 0 : -1}
+                aria-label="Close navigation menu"
+                data-testid="mobile-menu-close-btn"
+                onClick={() => setMobileOpen(false)}
+                className="inline-flex items-center justify-center w-11 h-11 rounded-lg text-text hover:bg-surface-2 cursor-pointer"
+              >
+                <X className="w-6 h-6" aria-hidden="true" />
+              </button>
+            </Container>
+          </div>
+
+          {/* Search Input inside Mobile Menu */}
+          <div className="py-4 border-b border-border bg-bg-elevated">
+            <Container>
+              <form
+                onSubmit={handleSearchSubmit}
+                role="search"
+                data-testid="mobile-menu-search-form"
+                className="relative"
+              >
+                <label htmlFor="mobile-menu-search-input" className="sr-only">
+                  Search clearance deals
+                </label>
+                <Search
+                  aria-hidden="true"
+                  className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                />
+                <input
+                  id="mobile-menu-search-input"
+                  data-testid="mobile-menu-search-input"
+                  type="search"
+                  tabIndex={mobileOpen ? 0 : -1}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search clearance deals…"
+                  className="w-full bg-surface border border-border-strong rounded-lg pl-10 pr-20 py-3 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  tabIndex={mobileOpen ? 0 : -1}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-md"
+                >
+                  Search
+                </button>
+              </form>
+            </Container>
+          </div>
+
+          {/* Categories List */}
+          <div className="py-6">
+            <Container>
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <p className="type-eyebrow text-muted">Shop Categories</p>
+                <ThemeToggleButton
+                  testId="theme-toggle-mobile-menu"
+                  showLabel={true}
+                />
+              </div>
+
+              <nav
+                aria-label="Mobile categories"
+                className="flex flex-col divide-y divide-border"
+              >
+                {HEADER_CATEGORIES.map((cat) => {
+                  const active = isCategoryActive(cat);
+                  return (
+                    <Link
+                      key={cat.label}
+                      to={cat.to}
+                      tabIndex={mobileOpen ? 0 : -1}
+                      onClick={() => setMobileOpen(false)}
+                      className={`py-3.5 flex items-center justify-between font-heading text-lg font-bold ${
+                        active ? 'text-accent' : 'text-text hover:text-primary'
+                      }`}
+                    >
+                      <span>{cat.label}</span>
+                      <ArrowRight className="w-4 h-4 text-muted" />
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {/* Help & Guides Links */}
+              <p className="type-eyebrow text-muted mt-8 mb-3">
+                Guides &amp; Customer Help
+              </p>
+              <nav
+                aria-label="Mobile help and guides"
+                className="grid grid-cols-2 gap-3"
+              >
+                {HEADER_HELP_LINKS.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    tabIndex={mobileOpen ? 0 : -1}
+                    onClick={() => setMobileOpen(false)}
+                    className="px-3.5 py-2.5 rounded-lg bg-surface-2 border border-border text-xs font-medium text-text hover:border-primary"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            </Container>
+          </div>
+        </div>
+
+        {/* Mobile Panel Bottom CTAs */}
+        <div className="py-5 border-t border-border bg-bg-elevated">
+          <Container className="space-y-3">
+            <Link
+              to="/deals"
+              tabIndex={mobileOpen ? 0 : -1}
+              onClick={() => setMobileOpen(false)}
+              className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-lg bg-accent hover:bg-accent-hover text-white font-heading font-bold text-sm"
+            >
+              <span>Shop All Clearance Deals</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <a
+              href={BRAND_WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              tabIndex={mobileOpen ? 0 : -1}
+              className="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg bg-navy-deep text-white font-medium text-xs"
+            >
+              <MessageCircle className="w-4 h-4 text-success" />
+              <span>Chat on WhatsApp ({BRAND_WHATSAPP_DISPLAY})</span>
+            </a>
+          </Container>
         </div>
       </div>
     </>

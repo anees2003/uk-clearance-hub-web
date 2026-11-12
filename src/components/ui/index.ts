@@ -7,3 +7,4 @@ export type { EyebrowProps } from './Eyebrow';
 export { SectionHeading } from './SectionHeading';
 export type { SectionHeadingProps } from './SectionHeading';
 export { FilmGrain } from './FilmGrain';
+export { FloatingWhatsAppButton } from './FloatingWhatsAppButton';

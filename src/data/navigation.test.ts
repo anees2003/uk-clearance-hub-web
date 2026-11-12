@@ -7,22 +7,48 @@ import {
   computeHeaderVisibility,
   validateNewsletterEmail,
 } from './navigation';
+import {
+  BRAND_LOGO_URL,
+  BRAND_ICON_URL,
+  BRAND_EMAIL,
+  BRAND_WHATSAPP_URL,
+  BRAND_SOCIAL_LINKS,
+  buildDealsSearchUrl,
+} from './brand';
 
-test('HEADER_NAV_LINKS contains the 6 required UK Clearance Hub navigation items', () => {
+test('HEADER_NAV_LINKS contains the 4 Step 9 UK Clearance Hub category items', () => {
   const labels = HEADER_NAV_LINKS.map((item) => item.label);
   assert.deepEqual(labels, [
-    'Clearance Deals',
-    'Beds',
-    'Mattress Guide',
-    'Size Guide',
-    'About',
-    'Contact',
+    'Electronics & Gadgets',
+    'Home Appliances',
+    'Home & Living',
+    'All Deals',
   ]);
 });
 
-test('FOOTER_COLUMNS contains Shop, Help, and Company link columns', () => {
+test('FOOTER_COLUMNS contains Shop, Help, and Legal link columns', () => {
   const titles = FOOTER_COLUMNS.map((col) => col.title);
-  assert.deepEqual(titles, ['Shop', 'Help', 'Company']);
+  assert.deepEqual(titles, ['Shop', 'Help', 'Legal']);
+});
+
+test('Brand constants match official UK Clearance Hub URLs and contacts', () => {
+  assert.equal(
+    BRAND_LOGO_URL,
+    'https://cdn.jsdelivr.net/gh/anees2003/uk-clearance-hub@main/uk-clearance-hub-logo.png'
+  );
+  assert.equal(
+    BRAND_ICON_URL,
+    'https://cdn.jsdelivr.net/gh/anees2003/uk-clearance-hub@main/uk-clearance-hub-icon.png'
+  );
+  assert.equal(BRAND_EMAIL, 'admin@ukclearancehub.co.uk');
+  assert.equal(BRAND_WHATSAPP_URL, 'https://wa.me/447344540043');
+  assert.equal(BRAND_SOCIAL_LINKS.length, 5);
+});
+
+test('buildDealsSearchUrl builds clean /deals?q=... URLs', () => {
+  assert.equal(buildDealsSearchUrl(''), '/deals');
+  assert.equal(buildDealsSearchUrl('  '), '/deals');
+  assert.equal(buildDealsSearchUrl('ottoman bed'), '/deals?q=ottoman%20bed');
 });
 
 test('formatBedSlugTitle converts URL slugs to editorial title case', () => {
@@ -32,13 +58,9 @@ test('formatBedSlugTitle converts URL slugs to editorial title case', () => {
 });
 
 test('computeHeaderVisibility hides header on scroll down past threshold and shows on scroll up', () => {
-  // Near top of page -> always visible (hidden = false)
   assert.equal(computeHeaderVisibility(20, 0, false), false);
-  // Scrolling down past threshold -> hidden = true
   assert.equal(computeHeaderVisibility(180, 100, false), true);
-  // Scrolling up -> hidden = false
   assert.equal(computeHeaderVisibility(120, 180, true), false);
-  // Micro-scroll smaller than delta -> retains previous state
   assert.equal(computeHeaderVisibility(122, 120, false), false);
 });
 

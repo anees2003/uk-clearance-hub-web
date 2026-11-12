@@ -383,23 +383,67 @@ export function useAssemblyTimeline({
       lampRight,
     } = parts;
 
-    if (
-      !base ||
-      !mattress ||
-      !headboard ||
-      !pillowsBack ||
-      !pillowsFront ||
-      !nightstandLeft ||
-      !nightstandRight ||
-      !lampLeft ||
-      !lampRight
-    ) {
-      return;
-    }
+      if (
+        !base ||
+        !mattress ||
+        !headboard ||
+        !pillowsBack ||
+        !pillowsFront ||
+        !nightstandLeft ||
+        !nightstandRight ||
+        !lampLeft ||
+        !lampRight
+      ) {
+        return;
+      }
 
-    const ctx = gsap.context(() => {
-      // 1. Apply initial disassembled state (all parts hidden at start offsets, hero camera pose)
-      applyInitialDisassembledState(bedSet);
+      const reducedMotion =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Step 13 Accessibility (prefers-reduced-motion):
+      // Disable scroll-scrubbed 3D camera moves and flying part assembly;
+      // show the complete assembled bed in a calm static pose instead.
+      if (reducedMotion) {
+        const allParts = [
+          ['base', base],
+          ['mattress', mattress],
+          ['headboard', headboard],
+          ['pillowsBack', pillowsBack],
+          ['pillowsFront', pillowsFront],
+          ['nightstandLeft', nightstandLeft],
+          ['nightstandRight', nightstandRight],
+          ['lampLeft', lampLeft],
+          ['lampRight', lampRight],
+        ] as const;
+
+        for (const [key, node] of allParts) {
+          const orig = originalTransforms[key];
+          node.visible = true;
+          node.position.copy(orig.position);
+          node.rotation.copy(orig.rotation);
+          node.scale.copy(orig.scale);
+        }
+
+        if (lampLightLeft) lampLightLeft.intensity = 1.2;
+        if (lampLightRight) lampLightRight.intensity = 1.2;
+
+        cameraPosition.copy(CAMERA_KEYFRAMES.completeStart.position);
+        cameraTarget.copy(COMPLETE_ORBIT_CENTER);
+        bedSet.syncCamera?.();
+        bedSet.invalidate?.();
+
+        wrapper.setAttribute('data-visible-parts', '9');
+        wrapper.setAttribute('data-timeline-time', '7.00');
+        wrapper.setAttribute('data-reduced-motion', 'true');
+        ScrollTrigger.refresh();
+        return;
+      }
+
+      const ctx = gsap.context(() => {
+        // 1. Apply initial disassembled state (all parts hidden at start offsets, hero camera pose)
+        applyInitialDisassembledState(bedSet);
 
       // Animation proxy objects for custom hinged / base-pivoted transforms & 180 deg circular orbit
       const headboardProxy = { angle: Math.PI / 2 };

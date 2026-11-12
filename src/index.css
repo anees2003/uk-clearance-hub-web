@@ -2,43 +2,76 @@
 @import "./styles/theme.css";
 
 @theme {
-  --color-ivory: #F3EFE9;
-  --color-charcoal: #1C1C1E;
-  --color-clearance-red: #C8102E;
-  --color-soft-oak: #B89B72;
-  --color-warm-grey: #8A8580;
-  --color-line: rgba(28, 28, 30, 0.12);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-amber: var(--amber);
+  --color-navy-deep: var(--navy-deep);
+  --color-success: var(--success);
+  --color-focus: var(--focus-ring);
 
-  --font-serif: "Cormorant Garamond", Georgia, serif;
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Backward-compatible Tailwind theme aliases mapped to semantic variables */
+  --color-navy: var(--text);
+  --color-brand-blue: var(--primary);
+  --color-sky-blue: var(--primary);
+  --color-orange: var(--accent);
+  --color-line: var(--border);
+  --color-ivory: var(--bg);
+  --color-charcoal: var(--text);
+  --color-clearance-red: var(--accent);
+  --color-soft-oak: var(--primary);
+  --color-warm-grey: var(--text-muted);
 
-  --text-display: clamp(3.5rem, 8.5vw, 9rem);
-  --text-h1: clamp(2.5rem, 5.5vw, 5.25rem);
-  --text-h2: clamp(2rem, 4vw, 3.75rem);
-  --text-h3: clamp(1.375rem, 2.2vw, 2.125rem);
+  --font-heading: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --text-display: clamp(2.75rem, 6.2vw, 6.5rem);
+  --text-h1: clamp(2.25rem, 4.4vw, 4.25rem);
+  --text-h2: clamp(1.75rem, 3.1vw, 3rem);
+  --text-h3: clamp(1.25rem, 2vw, 1.875rem);
   --text-body: clamp(1rem, 1.05vw, 1.125rem);
   --text-small: clamp(0.8125rem, 0.9vw, 0.9375rem);
-  --text-eyebrow: clamp(0.6875rem, 0.8vw, 0.75rem);
+  --text-eyebrow: 0.75rem;
 
-  --spacing-section: clamp(6rem, 10vw, 12rem);
-  --max-width-container: 1440px;
+  --container-max: 1440px;
 }
 
 @layer base {
   html {
-    background-color: var(--color-ivory);
-    color: var(--color-charcoal);
+    background-color: var(--bg);
+    color: var(--text);
     font-family: var(--font-sans);
+    overflow-x: clip;
   }
 
   body {
-    background-color: var(--color-ivory);
-    color: var(--color-charcoal);
+    background-color: var(--bg);
+    color: var(--text);
     font-family: var(--font-sans);
-    overflow-x: hidden;
+    overflow-x: clip;
+    margin: 0;
   }
 
-  h1, h2, h3, h4, .font-serif {
-    font-family: var(--font-serif);
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+  }
+
+  .font-heading,
+  .font-serif {
+    font-family: var(--font-heading);
   }
 }

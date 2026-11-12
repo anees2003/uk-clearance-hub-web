@@ -78,24 +78,24 @@ export const ChapterProgress: React.FC<ChapterProgressProps> = ({
         data-testid="chapter-progress-mobile"
         data-visible={progressState.isVisible ? 'true' : 'false'}
         aria-hidden="true"
-        className={`fixed top-0 left-0 right-0 z-50 h-[2px] bg-[rgba(28,28,30,0.12)] lg:hidden pointer-events-none transition-opacity duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 h-[2px] bg-border-strong lg:hidden pointer-events-none transition-opacity duration-300 ${
           progressState.isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
         <div
           data-testid="chapter-progress-mobile-fill"
-          className="h-full w-full bg-[#1C1C1E] origin-left will-change-transform"
+          className="h-full w-full bg-accent origin-left will-change-transform"
           style={{ transform: `scaleX(${progressState.fillProgress})` }}
         />
       </div>
 
-      {/* Desktop (>=1024px): Fixed right-edge vertically centred chapter progress bar */}
+      {/* Desktop (>=1024px): Fixed right-edge vertically centred chapter progress bar (>= 24px from edge) */}
       <nav
         aria-label="Bed assembly chapters"
         data-testid="chapter-progress-desktop"
         data-visible={progressState.isVisible ? 'true' : 'false'}
         data-active-stop={progressState.activeStopId}
-        className={`hidden lg:flex fixed right-3.5 xl:right-5 top-1/2 -translate-y-1/2 z-30 items-stretch transition-opacity duration-500 ${
+        className={`hidden lg:flex fixed right-6 top-1/2 -translate-y-1/2 z-30 items-stretch transition-opacity duration-500 ${
           progressState.isVisible
             ? 'opacity-100 pointer-events-auto'
             : 'opacity-0 pointer-events-none'
@@ -114,10 +114,10 @@ export const ChapterProgress: React.FC<ChapterProgressProps> = ({
                 data-active={isActive ? 'true' : 'false'}
                 aria-current={isActive ? 'step' : undefined}
                 onClick={() => handleStopClick(stop.id)}
-                className={`group flex items-center justify-end gap-2.5 py-2 text-right font-sans text-[0.625rem] uppercase tracking-[0.2em] transition-colors duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1C1C1E] ${
+                className={`group flex items-center justify-end gap-2.5 py-2 text-right font-sans text-[0.625rem] uppercase tracking-[0.2em] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
                   isActive
-                    ? 'text-[#1C1C1E] font-medium opacity-100'
-                    : 'text-[#8A8580]/50 hover:text-[#1C1C1E]/80'
+                    ? 'text-text font-bold opacity-100'
+                    : 'text-muted hover:text-text'
                 }`}
               >
                 <span className="whitespace-nowrap">{stop.label}</span>
@@ -125,8 +125,8 @@ export const ChapterProgress: React.FC<ChapterProgressProps> = ({
                   aria-hidden="true"
                   className={`block rounded-full transition-transform duration-300 ${
                     isActive
-                      ? 'w-2 h-2 bg-[#1C1C1E] scale-125'
-                      : 'w-1.5 h-1.5 bg-[#8A8580]/50 scale-100 group-hover:bg-[#1C1C1E]/70'
+                      ? 'w-2 h-2 bg-accent scale-125'
+                      : 'w-1.5 h-1.5 bg-muted/60 scale-100 group-hover:bg-primary'
                   }`}
                 />
               </button>
@@ -134,14 +134,14 @@ export const ChapterProgress: React.FC<ChapterProgressProps> = ({
           })}
         </div>
 
-        {/* Thin vertical track line with filled charcoal progress */}
+        {/* Thin vertical track line with filled primary progress */}
         <div
           aria-hidden="true"
-          className="w-px self-stretch my-2 bg-[rgba(28,28,30,0.14)] relative overflow-hidden"
+          className="w-px self-stretch my-2 bg-border-strong relative overflow-hidden"
         >
           <div
             data-testid="chapter-progress-desktop-fill"
-            className="w-full h-full bg-[#1C1C1E] origin-top will-change-transform"
+            className="w-full h-full bg-primary origin-top will-change-transform"
             style={{ transform: `scaleY(${progressState.fillProgress})` }}
           />
         </div>

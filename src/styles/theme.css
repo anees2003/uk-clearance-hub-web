@@ -1,66 +1,177 @@
-:root {
-  /* Core Palette */
-  --color-ivory: #F3EFE9;
-  --color-charcoal: #1C1C1E;
-  --color-clearance-red: #C8102E;
-  --color-soft-oak: #B89B72;
-  --color-warm-grey: #8A8580;
-  --color-line: rgba(28, 28, 30, 0.12);
+:root,
+html[data-theme="dark"] {
+  /* Step 9B Semantic Dark Theme (Default) */
+  --bg: #07090F;
+  --bg-elevated: #0D1220;
+  --surface: #111827;
+  --surface-2: #172036;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #F5F7FB;
+  --text-muted: #9AA6C2;
+  --primary: #16A5F4;
+  --primary-hover: #3BB7FF;
+  --primary-contrast: #041C58;
+  --accent: #FD7209;
+  --accent-hover: #FF8A2B;
+  --amber: #FFC829;
+  --navy-deep: #041C58;
+  --success: #25D366;
+  --focus-ring: #16A5F4;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --shadow-hover: 0 14px 36px rgba(22, 165, 244, 0.18);
+  --glow-hero:
+    radial-gradient(circle at 18% 22%, rgba(22, 165, 244, 0.09), transparent 52%),
+    radial-gradient(circle at 82% 76%, rgba(253, 114, 9, 0.08), transparent 52%);
 
-  /* Typography Families */
-  --font-serif: "Cormorant Garamond", Georgia, serif;
+  /* Shared Easing & Signature Gradients */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --gradient-hero: linear-gradient(135deg, #16A5F4, #1170D8 55%, #041C58);
+
+  /* Backward-compatible semantic aliases */
+  --color-navy: var(--text);
+  --color-brand-blue: var(--primary);
+  --color-sky-blue: #16A5F4;
+  --color-orange: var(--accent);
+  --color-amber: var(--amber);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-2);
+  --color-line: var(--border);
+  --color-muted: var(--text-muted);
+  --color-whatsapp: var(--success);
+  --color-ivory: var(--bg);
+  --color-charcoal: var(--text);
+  --color-clearance-red: var(--accent);
+  --color-soft-oak: var(--primary);
+  --color-warm-grey: var(--text-muted);
+
+  /* Typography */
+  --font-heading: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Fluid Type Scale */
-  --text-display: clamp(3.5rem, 8.5vw, 9rem);
-  --text-h1: clamp(2.5rem, 5.5vw, 5.25rem);
-  --text-h2: clamp(2rem, 4vw, 3.75rem);
-  --text-h3: clamp(1.375rem, 2.2vw, 2.125rem);
+  --text-display: clamp(2.75rem, 6.2vw, 6.5rem);
+  --text-h1: clamp(2.25rem, 4.4vw, 4.25rem);
+  --text-h2: clamp(1.75rem, 3.1vw, 3rem);
+  --text-h3: clamp(1.25rem, 2vw, 1.875rem);
   --text-body: clamp(1rem, 1.05vw, 1.125rem);
   --text-small: clamp(0.8125rem, 0.9vw, 0.9375rem);
-  --text-eyebrow: clamp(0.6875rem, 0.8vw, 0.75rem);
+  --text-eyebrow: 0.75rem;
 
-  /* Layout & Spacing */
-  --section-padding: clamp(6rem, 10vw, 12rem);
+  /* Section & Layout Spacing */
+  --space-section-y: clamp(4rem, 8vw, 8rem);
   --container-max: 1440px;
+  --container-pad-x: clamp(1.25rem, 4vw, 3rem);
   --grid-gutter: 24px;
 }
 
-/* Typography Scale Utilities */
+html[data-theme="light"] {
+  /* Step 9B Semantic Light Theme */
+  --bg: #F6F8FC;
+  --bg-elevated: #EEF2F9;
+  --surface: #FFFFFF;
+  --surface-2: #EEF2F9;
+  --border: rgba(4, 28, 88, 0.10);
+  --border-strong: rgba(4, 28, 88, 0.18);
+  --text: #041C58;
+  --text-muted: #5B6785;
+  --primary: #1170D8;
+  --primary-hover: #041C58;
+  --primary-contrast: #FFFFFF;
+  --accent: #FD7209;
+  --accent-hover: #E56300;
+  --amber: #FFC829;
+  --navy-deep: #041C58;
+  --success: #25D366;
+  --focus-ring: #16A5F4;
+  --shadow: 0 8px 28px rgba(4, 28, 88, 0.06);
+  --shadow-hover: 0 12px 32px rgba(17, 112, 216, 0.12);
+  --glow-hero:
+    radial-gradient(circle at 18% 22%, rgba(22, 165, 244, 0.07), transparent 52%),
+    radial-gradient(circle at 82% 76%, rgba(253, 114, 9, 0.06), transparent 52%);
+}
+
+/* View Transitions Circular Theme Switch Support */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+/* Fallback 250ms cross-fade when View Transitions API is unavailable or reduced motion is preferred */
+html[data-theme-crossfade="true"],
+html[data-theme-crossfade="true"] body,
+html[data-theme-crossfade="true"] header,
+html[data-theme-crossfade="true"] footer,
+html[data-theme-crossfade="true"] section,
+html[data-theme-crossfade="true"] article,
+html[data-theme-crossfade="true"] div {
+  transition:
+    background-color 250ms var(--ease-out),
+    color 250ms var(--ease-out),
+    border-color 250ms var(--ease-out) !important;
+}
+
+/* Shared Layout Container & 12-Column Grid */
+.container-editorial {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 4vw, 3rem);
+}
+
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.section-padding,
+.section-spacing {
+  padding-block: clamp(4rem, 8vw, 8rem);
+}
+
+/* Fluid Typography Utility Classes */
 .type-display {
-  font-family: var(--font-serif);
+  font-family: var(--font-heading);
   font-size: var(--text-display);
-  line-height: 0.94;
-  letter-spacing: -0.02em;
-  font-weight: 400;
-  text-wrap: balance;
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  font-weight: 800;
 }
 
 .type-h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font-heading);
   font-size: var(--text-h1);
-  line-height: 1.02;
-  letter-spacing: -0.015em;
-  font-weight: 400;
-  text-wrap: balance;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 .type-h2 {
-  font-family: var(--font-serif);
+  font-family: var(--font-heading);
   font-size: var(--text-h2);
-  line-height: 1.08;
-  letter-spacing: -0.01em;
-  font-weight: 500;
-  text-wrap: balance;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 .type-h3 {
-  font-family: var(--font-serif);
+  font-family: var(--font-heading);
   font-size: var(--text-h3);
-  line-height: 1.18;
-  letter-spacing: -0.005em;
-  font-weight: 500;
-  text-wrap: balance;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 .type-body {
@@ -73,99 +184,117 @@
 .type-small {
   font-family: var(--font-sans);
   font-size: var(--text-small);
-  line-height: 1.5;
+  line-height: 1.55;
   font-weight: 400;
 }
 
 .type-eyebrow {
   font-family: var(--font-sans);
   font-size: var(--text-eyebrow);
-  line-height: 1.2;
-  letter-spacing: 0.2em;
+  line-height: 1.4;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-/* Layout & Spacing Utilities */
-.section-padding {
-  padding-top: var(--section-padding);
-  padding-bottom: var(--section-padding);
+.bg-hero-gradient {
+  background-image: var(--gradient-hero);
 }
 
-.container-editorial {
-  width: 100%;
-  max-width: var(--container-max);
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: clamp(1.5rem, 4vw, 4rem);
-  padding-right: clamp(1.5rem, 4vw, 4rem);
+.bg-hero-glow {
+  background-image: var(--glow-hero);
 }
 
-.grid-12 {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--grid-gutter);
+.shadow-theme {
+  box-shadow: var(--shadow);
 }
 
-/* Animated Underline for Navigation Links */
-.nav-link-underline {
-  position: relative;
+.shadow-theme-hover:hover {
+  box-shadow: var(--shadow-hover);
 }
 
-.nav-link-underline::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -3px;
-  width: 100%;
-  height: 1px;
-  background-color: var(--color-charcoal);
-  transform: scaleX(0);
-  transform-origin: right center;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+/* Global Interactive Smooth Transitions (200-300ms with shared --ease-out token) */
+a,
+button,
+input,
+select,
+textarea,
+[role="tab"],
+[role="radio"],
+.interactive-surface {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 240ms;
+  transition-timing-function: var(--ease-out);
 }
 
-.nav-link-underline:hover::after,
-.nav-link-underline[aria-current="page"]::after {
-  transform: scaleX(1);
-  transform-origin: left center;
-}
-
-/* Lenis Recommended Base CSS */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-
-.lenis.lenis-stopped {
+/* Line-by-line text reveal mask wrapper */
+.split-line-mask {
+  display: block;
   overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
 }
 
-@keyframes heroScrollLineLoop {
+.split-line-inner {
+  display: block;
+  will-change: transform;
+}
+
+/* Hero Scroll Indicator Vertical Line Loop */
+@keyframes heroScrollLineSlide {
   0% {
     transform: translateY(-100%);
   }
+  50% {
+    transform: translateY(115%);
+  }
   100% {
-    transform: translateY(220%);
+    transform: translateY(250%);
   }
 }
 
 .hero-scroll-line-segment {
-  animation: heroScrollLineLoop 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: heroScrollLineSlide 2.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* Mobile QA Rules (< 768px):
+   1. Text never smaller than 14px (0.875rem) on mobile
+   2. Inputs/selects/textareas >= 16px (1rem) on mobile to prevent iOS Safari zoom on focus */
+@media (max-width: 767px) {
+  :root,
+  html[data-theme="dark"],
+  html[data-theme="light"] {
+    --text-small: 0.875rem;
+    --text-eyebrow: 0.875rem;
+  }
+
+  .text-xs,
+  .type-eyebrow,
+  .type-small,
+  [class*="text-[0."] {
+    font-size: 0.875rem !important;
+    line-height: 1.45 !important;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 1rem !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-scroll-line-segment {
     animation: none;
-    transform: translateY(0);
+    transform: translateY(40%);
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+    scroll-behavior: auto !important;
   }
 }
-

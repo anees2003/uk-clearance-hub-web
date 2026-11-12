@@ -1,6 +1,6 @@
 {
   "name": "UK Clearance Hub",
-  "description": "Premium UK bedroom furniture, handcrafted beds, and orthopaedic mattresses at up to 70% off clearance prices.",
+  "description": "Discover genuine UK clearance deals across Electronics & Gadgets, Home Appliances, and Home & Living from trusted UK suppliers.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

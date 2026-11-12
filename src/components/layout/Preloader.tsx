@@ -1,299 +1,246 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useGLTF } from '@react-three/drei';
-import { gsap, ScrollTrigger } from '../../animations/gsap';
+import { useLocation } from 'react-router-dom';
+import { gsap } from '../../animations/gsap';
 import { getLenisInstance } from '../../animations/useLenis';
-import { MODEL_URL } from '../../three/modelUrl';
-import { useStudioProgress } from '../../three/StudioScene';
-import {
-  computeMonotonicProgress,
-  formatPreloaderCounter,
-} from '../../data/assemblyChapters';
+import { useTheme } from '../../context/ThemeContext';
+import { useStudioProgressSubscription } from '../../utils/studioProgressStore';
+import { formatPreloaderCounter } from '../../data/assemblyChapters';
+import { doesRouteWaitFor3DModel } from '../../data/homePageData';
+import { getBrandLogoUrl } from '../../data/brand';
+import { Container } from '../ui/Container';
 
-// Ensure the GLB model is preloaded even if the user first visits a non-3D route
-useGLTF.preload(MODEL_URL);
+export const APP_READY_EVENT = 'uk-clearance-hub:ready';
 
-export const APP_READY_EVENT = 'app:ready';
-
-let hasShownInitialPreloader = false;
-let appReadyDispatched = false;
+let hasPreloaderCompletedOnce = false;
 
 export function isAppReady(): boolean {
-  return appReadyDispatched;
+  return hasPreloaderCompletedOnce;
 }
 
-const WORDMARK_TEXT = 'UK Clearance Hub';
-
 export const Preloader: React.FC = () => {
-  const [isVisible, setIsVisible] = useState<boolean>(() => !hasShownInitialPreloader);
-  const [preloaderState, setPreloaderState] = useState<'loading' | 'exiting' | 'done'>(
-    () => (hasShownInitialPreloader ? 'done' : 'loading')
-  );
+  const { theme } = useTheme();
+  const location = useLocation();
+  const waitFor3DModel = doesRouteWaitFor3DModel(location.pathname);
+
+  const [dismissed, setDismissed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('autostart') === '1') {
+        hasPreloaderCompletedOnce = true;
+        return true;
+      }
+    }
+    return hasPreloaderCompletedOnce;
+  });
+
+  const { progress, active, loaded, total } = useStudioProgressSubscription();
 
   const overlayRef = useRef<HTMLDivElement | null>(null);
-  const charsWrapperRef = useRef<HTMLHeadingElement | null>(null);
-  const progressBarFillRef = useRef<HTMLDivElement | null>(null);
-  const progressTrackRef = useRef<HTMLDivElement | null>(null);
-  const counterInnerRef = useRef<HTMLSpanElement | null>(null);
+  const logoInnerRef = useRef<HTMLDivElement | null>(null);
+  const progressFillRef = useRef<HTMLDivElement | null>(null);
+  const counterElRef = useRef<HTMLSpanElement | null>(null);
   const eyebrowInnerRef = useRef<HTMLSpanElement | null>(null);
 
-  const maxProgressRef = useRef<number>(0);
-  const displayProgressObjRef = useRef<{ value: number }>({ value: 0 });
-  const exitStartedRef = useRef<boolean>(false);
+  const [fontsReady, setFontsReady] = useState(false);
+  const [minDelayPassed, setMinDelayPassed] = useState(false);
+  const [counterReached100, setCounterReached100] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
-  const [fontsReady, setFontsReady] = useState<boolean>(false);
-  const [minTimeElapsed, setMinTimeElapsed] = useState<boolean>(false);
-  const [glbReady, setGlbReady] = useState<boolean>(false);
+  const maxTargetRef = useRef(0);
+  const tweenObjRef = useRef({ value: 0 });
+  const isExitingRef = useRef(false);
 
-  const { active, progress, loaded, total } = useStudioProgress();
-
-  // Lock Lenis & document scrolling while the preloader is visible
+  // Dispatch ready immediately if skipped via ?autostart=1 or already completed
   useEffect(() => {
-    if (!isVisible) return;
+    if (dismissed) {
+      hasPreloaderCompletedOnce = true;
+      window.dispatchEvent(new CustomEvent(APP_READY_EVENT));
+    }
+  }, [dismissed]);
 
-    document.documentElement.style.overflow = 'hidden';
+  // Lock page scroll (body overflow + Lenis) while preloader is active
+  // and wait for document.fonts.ready + 1.2s minimum display time
+  useEffect(() => {
+    if (dismissed) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     getLenisInstance()?.stop();
 
-    const lockInterval = window.setInterval(() => {
-      if (!exitStartedRef.current) {
-        getLenisInstance()?.stop();
+    let cancelled = false;
+
+    const minTimer = window.setTimeout(() => {
+      if (!cancelled) {
+        setMinDelayPassed(true);
       }
-    }, 60);
+    }, 1200);
 
-    return () => {
-      window.clearInterval(lockInterval);
-      document.documentElement.style.overflow = '';
-    };
-  }, [isVisible]);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready
+        .then(() => {
+          if (!cancelled) setFontsReady(true);
+        })
+        .catch(() => {
+          if (!cancelled) setFontsReady(true);
+        });
+    } else {
+      setFontsReady(true);
+    }
 
-  // Initial entrance animation for the letter-by-letter wordmark, eyebrow, and counter
-  useEffect(() => {
-    if (!isVisible || !overlayRef.current) return;
-
+    // Entrance animation for the centre full logo and bottom labels
     const ctx = gsap.context(() => {
-      const charEls = charsWrapperRef.current
-        ? Array.from(
-            charsWrapperRef.current.querySelectorAll<HTMLElement>(
-              '[data-preloader-char]'
-            )
-          )
-        : [];
-
-      gsap.set(overlayRef.current, {
-        clipPath: 'inset(0% 0% 0% 0%)',
-      });
-
-      if (charEls.length > 0) {
+      if (logoInnerRef.current) {
         gsap.fromTo(
-          charEls,
-          { yPercent: 115 },
+          logoInnerRef.current,
+          { yPercent: 105 },
           {
             yPercent: 0,
-            stagger: 0.024,
-            duration: 0.75,
+            duration: 0.85,
             ease: 'power3.out',
           }
         );
       }
-
       if (eyebrowInnerRef.current) {
         gsap.fromTo(
           eyebrowInnerRef.current,
-          { yPercent: 110 },
+          { yPercent: 105 },
           {
             yPercent: 0,
             duration: 0.7,
-            delay: 0.1,
-            ease: 'power3.out',
-          }
-        );
-      }
-
-      if (counterInnerRef.current) {
-        gsap.fromTo(
-          counterInnerRef.current,
-          { yPercent: 110 },
-          {
-            yPercent: 0,
-            duration: 0.7,
-            delay: 0.1,
+            delay: 0.12,
             ease: 'power3.out',
           }
         );
       }
     }, overlayRef);
 
-    return () => ctx.revert();
-  }, [isVisible]);
-
-  // Track minimum 1.2s display time and document.fonts.ready
-  useEffect(() => {
-    if (!isVisible) return;
-
-    let cancelled = false;
-
-    const minTimer = window.setTimeout(() => {
-      if (!cancelled) {
-        setMinTimeElapsed(true);
-      }
-    }, 1200);
-
-    // Fallback in case a non-3D route has 0 assets queued in THREE.DefaultLoadingManager
-    const fallbackGlbTimer = window.setTimeout(() => {
-      if (!cancelled && !active) {
-        maxProgressRef.current = 100;
-        setGlbReady(true);
-      }
-    }, 1800);
-
-    const fontsPromise =
-      typeof document !== 'undefined' && 'fonts' in document && document.fonts?.ready
-        ? document.fonts.ready
-        : Promise.resolve();
-
-    fontsPromise.then(() => {
-      if (!cancelled) {
-        setFontsReady(true);
-      }
-    });
-
     return () => {
       cancelled = true;
       window.clearTimeout(minTimer);
-      window.clearTimeout(fallbackGlbTimer);
+      ctx.revert();
+      document.body.style.overflow = prevOverflow;
     };
-  }, [isVisible, active]);
+  }, [dismissed]);
 
-  // Smoothly tween counter ("000" -> "100") and progress bar with real drei useProgress
+  // Smoothly tween counter 000 -> 100:
+  // On 3D showroom pages (/home-living, etc.), driven by real drei useProgress.
+  // On the homepage (/) and non-3D pages, does not wait for the 3D model — tweens smoothly to 100 immediately.
   useEffect(() => {
-    if (!isVisible) return;
+    if (dismissed) return;
 
-    const monotonic = computeMonotonicProgress(
-      maxProgressRef.current,
-      progress,
-      active,
-      loaded,
-      total
-    );
-    maxProgressRef.current = monotonic;
+    let rawTarget: number;
+    if (!waitFor3DModel) {
+      rawTarget = 100;
+    } else {
+      const glbFinished =
+        !active && (progress >= 100 || (total > 0 && loaded >= total));
+      rawTarget = glbFinished ? 100 : Math.min(99, Math.max(0, progress));
+    }
 
-    gsap.to(displayProgressObjRef.current, {
-      value: monotonic,
-      duration: 0.4,
+    // Never jump backwards
+    const nextTarget = Math.max(maxTargetRef.current, rawTarget);
+    maxTargetRef.current = nextTarget;
+
+    gsap.to(tweenObjRef.current, {
+      value: nextTarget,
+      duration: waitFor3DModel ? 0.55 : 0.85,
       ease: 'power2.out',
       overwrite: true,
       onUpdate: () => {
-        const currentVal = displayProgressObjRef.current.value;
-        if (counterInnerRef.current) {
-          counterInnerRef.current.textContent = formatPreloaderCounter(currentVal);
+        const v = tweenObjRef.current.value;
+        if (counterElRef.current) {
+          counterElRef.current.textContent = formatPreloaderCounter(v);
         }
-        if (progressBarFillRef.current) {
-          progressBarFillRef.current.style.transform = `scaleX(${Math.max(
-            0,
-            Math.min(1, currentVal / 100)
-          )})`;
+        if (progressFillRef.current) {
+          progressFillRef.current.style.transform = `scaleX(${Math.min(1, Math.max(0, v / 100))})`;
+        }
+        if (v >= 99.9) {
+          setCounterReached100(true);
         }
       },
       onComplete: () => {
-        if (monotonic >= 100) {
-          setGlbReady(true);
+        if (tweenObjRef.current.value >= 99.9) {
+          setCounterReached100(true);
         }
       },
     });
+  }, [progress, active, loaded, total, dismissed, waitFor3DModel]);
 
-    if (monotonic >= 100 && !active) {
-      setGlbReady(true);
-    }
-  }, [isVisible, active, progress, loaded, total]);
-
-  // Trigger exit sequence once GLB is at 100%, document.fonts.ready resolved, and >= 1.2s elapsed
+  // Safety fallback if a 3D route has 0 active items in useProgress
   useEffect(() => {
-    if (
-      !isVisible ||
-      exitStartedRef.current ||
-      !glbReady ||
-      !fontsReady ||
-      !minTimeElapsed
-    ) {
+    if (dismissed) return;
+    const fallbackTimer = window.setTimeout(() => {
+      if (!active && total === 0 && maxTargetRef.current < 100) {
+        maxTargetRef.current = 100;
+        gsap.to(tweenObjRef.current, {
+          value: 100,
+          duration: 0.6,
+          ease: 'power2.out',
+          onUpdate: () => {
+            const v = tweenObjRef.current.value;
+            if (counterElRef.current) {
+              counterElRef.current.textContent = formatPreloaderCounter(v);
+            }
+            if (progressFillRef.current) {
+              progressFillRef.current.style.transform = `scaleX(${v / 100})`;
+            }
+          },
+          onComplete: () => setCounterReached100(true),
+        });
+      }
+    }, 800);
+    return () => window.clearTimeout(fallbackTimer);
+  }, [active, total, dismissed]);
+
+  // Exit choreography once GLB is at 100%, fonts are ready, and >= 1.2s has elapsed
+  useEffect(() => {
+    if (dismissed || isExitingRef.current) return;
+    if (!counterReached100 || !fontsReady || !minDelayPassed) return;
+
+    isExitingRef.current = true;
+
+    const overlayEl = overlayRef.current;
+    if (!overlayEl) {
+      hasPreloaderCompletedOnce = true;
+      document.body.style.overflow = '';
+      getLenisInstance()?.start();
+      setDismissed(true);
+      window.dispatchEvent(new CustomEvent(APP_READY_EVENT));
       return;
     }
 
-    exitStartedRef.current = true;
-    hasShownInitialPreloader = true;
-
-    const overlayEl = overlayRef.current;
-    if (!overlayEl) return;
-
-    const charEls = charsWrapperRef.current
-      ? Array.from(
-          charsWrapperRef.current.querySelectorAll<HTMLElement>(
-            '[data-preloader-char]'
-          )
-        )
-      : [];
-
     const tl = gsap.timeline({
       onComplete: () => {
-        setPreloaderState('done');
-        document.body.setAttribute('data-preloader-state', 'done');
-        document.documentElement.style.overflow = '';
+        hasPreloaderCompletedOnce = true;
+        document.body.style.overflow = '';
         getLenisInstance()?.start();
-        ScrollTrigger.refresh();
-        setIsVisible(false);
+        setDismissed(true);
+        window.dispatchEvent(new CustomEvent(APP_READY_EVENT));
       },
     });
 
-    // Ensure counter and bar finish at exact 100 before sliding up
-    tl.to(displayProgressObjRef.current, {
-      value: 100,
-      duration: 0.2,
-      ease: 'power2.out',
-      onUpdate: () => {
-        const currentVal = displayProgressObjRef.current.value;
-        if (counterInnerRef.current) {
-          counterInnerRef.current.textContent = formatPreloaderCounter(currentVal);
-        }
-        if (progressBarFillRef.current) {
-          progressBarFillRef.current.style.transform = `scaleX(${Math.max(
-            0,
-            Math.min(1, currentVal / 100)
-          )})`;
-        }
-      },
-    });
-
-    // Fire "app:ready" as the preloader exit begins so Home intro animations start
-    tl.add(() => {
-      setPreloaderState('exiting');
-      document.body.setAttribute('data-preloader-state', 'exiting');
-      document.body.setAttribute('data-app-ready', 'true');
-      appReadyDispatched = true;
-      window.dispatchEvent(new CustomEvent(APP_READY_EVENT));
-    });
-
-    // 1. Wordmark letters, progress track, eyebrow, and counter slide up out of their masks
-    if (charEls.length > 0) {
+    // 1. Logo, eyebrow, and counter slide up out of their masks
+    if (logoInnerRef.current) {
       tl.to(
-        charEls,
+        logoInnerRef.current,
         {
           yPercent: -115,
-          stagger: 0.015,
-          duration: 0.45,
+          duration: 0.55,
           ease: 'power3.inOut',
         },
-        'exitText'
+        0
       );
     }
 
-    if (progressTrackRef.current) {
+    if (counterElRef.current) {
       tl.to(
-        progressTrackRef.current,
+        counterElRef.current,
         {
-          yPercent: -120,
-          opacity: 0,
-          duration: 0.4,
+          yPercent: -115,
+          duration: 0.5,
           ease: 'power3.inOut',
         },
-        'exitText'
+        0.04
       );
     }
 
@@ -302,22 +249,22 @@ export const Preloader: React.FC = () => {
         eyebrowInnerRef.current,
         {
           yPercent: -115,
-          duration: 0.45,
+          duration: 0.5,
           ease: 'power3.inOut',
         },
-        'exitText'
+        0.04
       );
     }
 
-    if (counterInnerRef.current) {
+    if (progressFillRef.current?.parentElement) {
       tl.to(
-        counterInnerRef.current,
+        progressFillRef.current.parentElement,
         {
-          yPercent: -115,
-          duration: 0.45,
-          ease: 'power3.inOut',
+          opacity: 0,
+          duration: 0.35,
+          ease: 'power2.out',
         },
-        'exitText'
+        0.15
       );
     }
 
@@ -330,87 +277,92 @@ export const Preloader: React.FC = () => {
         duration: 1.1,
         ease: 'expo.inOut',
       },
-      '-=0.15'
+      0.38
     );
-  }, [isVisible, glbReady, fontsReady, minTimeElapsed]);
+  }, [counterReached100, fontsReady, minDelayPassed, dismissed]);
 
-  if (!isVisible) {
+  if (dismissed) {
     return null;
   }
+
+  const activeLogoUrl = getBrandLogoUrl(theme);
 
   return (
     <div
       ref={overlayRef}
       data-testid="preloader-overlay"
-      data-preloader-state={preloaderState}
+      data-theme={theme}
       aria-label="Loading UK Clearance Hub showroom"
-      className="fixed inset-0 z-[100] flex flex-col justify-between bg-[#1C1C1E] text-[#F3EFE9] px-6 py-8 md:px-12 md:py-10 select-none"
+      className="fixed inset-0 z-[100] bg-bg text-text py-6 sm:py-10 md:py-12 select-none bg-hero-glow"
       style={{ clipPath: 'inset(0% 0% 0% 0%)' }}
     >
-      {/* Top spacer for vertical balance */}
-      <div aria-hidden="true" className="h-6" />
+      <Container className="h-full flex flex-col justify-between">
+        {/* Top spacer to keep logo optically centred */}
+        <div aria-hidden="true" className="h-6" />
 
-      {/* Centre: Serif wordmark revealed letter by letter + thin ivory progress line */}
-      <div className="flex flex-col items-center justify-center my-auto">
-        <div
-          ref={charsWrapperRef}
-          data-testid="preloader-wordmark"
-          aria-label={WORDMARK_TEXT}
-          className="font-serif text-[clamp(2.25rem,5vw,4.5rem)] font-normal tracking-[-0.01em] text-[#F3EFE9] leading-none"
-        >
-          {WORDMARK_TEXT.split('').map((char, idx) => (
-            <span
-              key={idx}
-              className="inline-block overflow-hidden pb-[0.12em] -mb-[0.12em]"
-            >
-              <span
-                data-preloader-char="true"
-                className="inline-block will-change-transform"
-              >
-                {char === ' ' ? '\u00A0' : char}
-              </span>
-            </span>
-          ))}
-        </div>
-
-        {/* Thin ivory progress line below wordmark */}
-        <div className="mt-6 overflow-hidden w-56 sm:w-72">
+        {/* Centre: Full UK Clearance Hub Logo revealed with an overflow mask + thin accent progress line */}
+        <div className="flex flex-col items-center justify-center my-auto">
           <div
-            ref={progressTrackRef}
-            className="h-px w-full bg-[#F3EFE9]/20 relative overflow-hidden"
+            data-testid="preloader-wordmark"
+            className="overflow-hidden py-2 px-4"
           >
             <div
-              ref={progressBarFillRef}
+              ref={logoInnerRef}
+              className="flex flex-col items-center gap-3 will-change-transform"
+            >
+              {!logoError ? (
+                <img
+                  src={activeLogoUrl}
+                  alt="UK Clearance Hub"
+                  width={220}
+                  height={140}
+                  decoding="async"
+                  onError={() => setLogoError(true)}
+                  className="h-20 sm:h-24 md:h-28 w-auto object-contain"
+                />
+              ) : (
+                <span className="font-heading text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-[-0.02em] whitespace-nowrap">
+                  <span className="text-text">UK Clearance </span>
+                  <span className="text-accent">Hub</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Thin orange progress line growing with real loading progress */}
+          <div className="mt-6 w-52 sm:w-64 md:w-72 h-[3px] bg-border-strong rounded-full overflow-hidden">
+            <div
+              ref={progressFillRef}
               data-testid="preloader-progress-line"
-              className="h-full w-full bg-[#F3EFE9] origin-left will-change-transform"
+              className="h-full w-full bg-accent origin-left will-change-transform"
               style={{ transform: 'scaleX(0)' }}
             />
           </div>
         </div>
-      </div>
 
-      {/* Bottom Row: Eyebrow on Bottom-Left, Large Tabular Counter on Bottom-Right */}
-      <div className="flex items-end justify-between w-full">
-        <div className="overflow-hidden">
-          <span
-            ref={eyebrowInnerRef}
-            data-testid="preloader-eyebrow"
-            className="block type-eyebrow text-[#F3EFE9]/70 will-change-transform"
-          >
-            Preparing your showroom
-          </span>
-        </div>
+        {/* Bottom Row: Left Eyebrow + Right Large Tabular Counter 000 -> 100 */}
+        <div className="flex items-end justify-between w-full">
+          <div className="overflow-hidden py-1">
+            <span
+              ref={eyebrowInnerRef}
+              data-testid="preloader-eyebrow"
+              className="block type-eyebrow text-muted"
+            >
+              Preparing your showroom
+            </span>
+          </div>
 
-        <div className="overflow-hidden">
-          <span
-            ref={counterInnerRef}
-            data-testid="preloader-counter"
-            className="block font-sans text-[clamp(2.75rem,6vw,5.5rem)] font-normal leading-none tracking-[-0.03em] text-[#F3EFE9] tabular-nums will-change-transform"
-          >
-            000
-          </span>
+          <div className="overflow-hidden py-1">
+            <span
+              ref={counterElRef}
+              data-testid="preloader-counter"
+              className="block font-sans font-bold text-4xl sm:text-5xl md:text-6xl tracking-tight text-text tabular-nums leading-none"
+            >
+              000
+            </span>
+          </div>
         </div>
-      </div>
+      </Container>
     </div>
   );
 };

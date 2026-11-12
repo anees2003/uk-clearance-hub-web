@@ -8,7 +8,49 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname, '.'),
+      },
+    },
+    build: {
+      chunkSizeWarningLimit: 900,
+      rolldownOptions: {
+        output: {
+          manualChunks(id: string) {
+            if (id.includes('node_modules')) {
+              if (id.includes('/node_modules/three/')) {
+                return 'vendor-three-core';
+              }
+              if (
+                id.includes('@react-three') ||
+                id.includes('three-stdlib') ||
+                id.includes('postprocessing') ||
+                id.includes('n8ao') ||
+                id.includes('maath') ||
+                id.includes('meshline') ||
+                id.includes('troika') ||
+                id.includes('react-reconciler') ||
+                id.includes('its-fine') ||
+                id.includes('suspend-react') ||
+                id.includes('zustand') ||
+                id.includes('camera-controls')
+              ) {
+                return 'vendor-three-eco';
+              }
+              if (id.includes('/gsap/') || id.includes('/lenis/')) {
+                return 'vendor-motion';
+              }
+              if (
+                id.includes('/node_modules/react/') ||
+                id.includes('/node_modules/react-dom/') ||
+                id.includes('/node_modules/react-router') ||
+                id.includes('/node_modules/scheduler/')
+              ) {
+                return 'vendor-react';
+              }
+            }
+            return undefined;
+          },
+        },
       },
     },
     server: {

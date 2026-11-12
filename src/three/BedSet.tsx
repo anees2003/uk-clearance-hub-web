@@ -24,8 +24,8 @@ import {
 import { gsap } from '../animations/gsap';
 import { APP_READY_EVENT, isAppReady } from '../components/layout/Preloader';
 
-// Preload the GLB model once at module evaluation
-useGLTF.preload(MODEL_URL);
+// Preload the GLB model once at module evaluation (Draco decoder enabled if compressed GLB is provided later)
+useGLTF.preload(MODEL_URL, true);
 
 let hasLoggedNodesInDev = false;
 
@@ -46,11 +46,24 @@ export interface BedSetProps {
    * Callback fired once the BedSet cloned scene, parts, and original transforms are ready.
    */
   onReady?: (handle: BedSetHandle) => void;
+  /**
+   * When true (e.g. inside an OrbitControls product viewer), BedSet will not overwrite
+   * the camera position/target every frame so OrbitControls can freely orbit and auto-rotate.
+   */
+  disableCameraRig?: boolean;
 }
 
 export const BedSet = forwardRef<BedSetHandle, BedSetProps>(
-  ({ rotationY = -Math.PI * 0.34, initialAssembled = true, onReady }, ref) => {
-    const gltf = useGLTF(MODEL_URL);
+  (
+    {
+      rotationY = -Math.PI * 0.34,
+      initialAssembled = true,
+      onReady,
+      disableCameraRig = false,
+    },
+    ref
+  ) => {
+    const gltf = useGLTF(MODEL_URL, true);
     const gl = useThree((state) => state.gl);
     const camera = useThree((state) => state.camera);
     const invalidate = useThree((state) => state.invalidate);
@@ -128,6 +141,7 @@ export const BedSet = forwardRef<BedSetHandle, BedSetProps>(
       }
 
       // 4. Configure materials, textures, anisotropy, and shadows on every mesh
+      // Clone materials per BedSet instance so colour swatch tweens never affect other scenes.
       const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
 
       sceneClone.traverse((child) => {
@@ -135,6 +149,12 @@ export const BedSet = forwardRef<BedSetHandle, BedSetProps>(
           const mesh = child as THREE.Mesh;
           mesh.castShadow = true;
           mesh.receiveShadow = true;
+
+          if (Array.isArray(mesh.material)) {
+            mesh.material = mesh.material.map((m) => (m ? m.clone() : m));
+          } else if (mesh.material) {
+            mesh.material = mesh.material.clone();
+          }
 
           const materials = Array.isArray(mesh.material)
             ? mesh.material
@@ -280,14 +300,15 @@ export const BedSet = forwardRef<BedSetHandle, BedSetProps>(
       [camera, cameraPosition, cameraTarget]
     );
 
-    // Call camera.lookAt(target) every frame via useFrame
+    // Call camera.lookAt(target) every frame via useFrame when scroll camera rig is active
     useFrame((_, delta) => {
+      if (disableCameraRig) return;
       applyCameraTransform(Math.min(delta, 0.1));
     });
 
     // Gentle 1.5s ease-out camera dolly into hero position once "app:ready" fires
     useEffect(() => {
-      if (initialAssembled || hasPlayedIntroDollyRef.current) return;
+      if (disableCameraRig || initialAssembled || hasPlayedIntroDollyRef.current) return;
 
       let dollyTween: gsap.core.Tween | null = null;
 
@@ -337,14 +358,18 @@ export const BedSet = forwardRef<BedSetHandle, BedSetProps>(
         window.removeEventListener(APP_READY_EVENT, playIntroDolly);
         dollyTween?.kill();
       };
-    }, [initialAssembled, applyCameraTransform, coalescedInvalidate]);
+    }, [disableCameraRig, initialAssembled, applyCameraTransform, coalescedInvalidate]);
 
-    // Desktop-only subtle mouse parallax (max ±0.08 units, disabled when not moving mouse)
+    // Desktop-only subtle mouse parallax (max ±0.08 units, disabled when not moving mouse or when reduced motion is preferred)
     useEffect(() => {
-      if (typeof window === 'undefined') return;
+      if (disableCameraRig || typeof window === 'undefined') return;
+
+      const isReducedMotion = () =>
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       const handleMouseMove = (event: MouseEvent) => {
-        if (window.innerWidth < MOBILE_BREAKPOINT_PX) {
+        if (window.innerWidth < MOBILE_BREAKPOINT_PX || isReducedMotion()) {
           targetParallaxRef.current.x = 0;
           targetParallaxRef.current.y = 0;
           return;
@@ -380,7 +405,7 @@ export const BedSet = forwardRef<BedSetHandle, BedSetProps>(
       };
 
       const handleResize = () => {
-        if (window.innerWidth < MOBILE_BREAKPOINT_PX) {
+        if (window.innerWidth < MOBILE_BREAKPOINT_PX || isReducedMotion()) {
           targetParallaxRef.current.x = 0;
           targetParallaxRef.current.y = 0;
           currentParallaxRef.current.x = 0;
@@ -400,7 +425,26 @@ export const BedSet = forwardRef<BedSetHandle, BedSetProps>(
           window.clearTimeout(mouseIdleTimerRef.current);
         }
       };
-    }, [applyCameraTransform, coalescedInvalidate]);
+    }, [disableCameraRig, applyCameraTransform, coalescedInvalidate]);
+
+    // Dispose cloned per-instance materials when unmounting to prevent GPU memory leaks
+    useEffect(() => {
+      return () => {
+        clonedScene.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            const materials = Array.isArray(mesh.material)
+              ? mesh.material
+              : [mesh.material];
+            materials.forEach((mat) => {
+              if (mat && typeof mat.dispose === 'function') {
+                mat.dispose();
+              }
+            });
+          }
+        });
+      };
+    }, [clonedScene]);
 
     const handleObject = useMemo<BedSetHandle>(
       () => ({
@@ -431,9 +475,11 @@ export const BedSet = forwardRef<BedSetHandle, BedSetProps>(
     useImperativeHandle(ref, () => handleObject, [handleObject]);
 
     useEffect(() => {
-      applyCameraTransform(0.016);
+      if (!disableCameraRig) {
+        applyCameraTransform(0.016);
+      }
       onReady?.(handleObject);
-    }, [applyCameraTransform, onReady, handleObject]);
+    }, [disableCameraRig, applyCameraTransform, onReady, handleObject]);
 
     return <primitive object={clonedScene} />;
   }

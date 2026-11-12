@@ -333,11 +333,11 @@ export const AssemblyChapterPanel: React.FC<AssemblyChapterPanelProps> = ({
       ref={sectionRef}
       id={chapter.id}
       data-testid={chapter.id}
-      className="h-screen w-full flex items-center"
+      className="min-h-[100dvh] h-[100dvh] w-full flex items-center"
     >
       <Container
         className={`h-full flex ${
-          isComplete ? 'items-start pt-[11vh] md:pt-[12vh]' : 'items-center'
+          isComplete ? 'items-start pt-[11dvh] md:pt-[12dvh]' : 'items-center'
         } ${alignmentClasses}`}
       >
         <div
@@ -351,22 +351,22 @@ export const AssemblyChapterPanel: React.FC<AssemblyChapterPanelProps> = ({
               : isRightSide
                 ? 'max-w-[400px] text-left lg:mr-20 xl:mr-20'
                 : 'max-w-[420px] text-left'
-          } bg-[#F3EFE9]/85 p-6 border border-[rgba(28,28,30,0.08)] md:bg-transparent md:border-none md:p-0`}
+          } bg-surface/95 backdrop-blur-md p-5 sm:p-6 rounded-xl border border-border-strong shadow-theme md:bg-transparent md:backdrop-blur-none md:border-none md:shadow-none md:p-0`}
         >
           {/* Eyebrow: chapter number like "01 / 06" + label */}
           {(panel.chapterNumber || panel.eyebrowLabel) && (
             <div
               ref={eyebrowRef}
               data-testid={`${chapter.id}-eyebrow`}
-              className="type-eyebrow mb-3.5 flex items-center gap-2.5 text-[#8A8580] tabular-nums"
+              className="type-eyebrow mb-3.5 flex items-center gap-2.5 text-muted tabular-nums"
             >
               {panel.chapterNumber && (
-                <span className="text-[#1C1C1E] font-medium">
+                <span className="text-accent font-bold">
                   {panel.chapterNumber}
                 </span>
               )}
               {panel.chapterNumber && panel.eyebrowLabel && (
-                <span aria-hidden="true" className="text-[#1C1C1E]/30">
+                <span aria-hidden="true" className="text-muted/50">
                   ·
                 </span>
               )}
@@ -374,11 +374,11 @@ export const AssemblyChapterPanel: React.FC<AssemblyChapterPanelProps> = ({
             </div>
           )}
 
-          {/* Serif Heading (line-split via splitLines helper) */}
+          {/* Heading (line-split via splitLines helper) */}
           <h2
             ref={headingRef}
             data-testid={`${chapter.id}-heading`}
-            className="type-h2 font-serif text-[#1C1C1E] mb-4"
+            className="type-h2 font-heading text-text mb-4"
           >
             {panel.heading}
           </h2>
@@ -387,7 +387,7 @@ export const AssemblyChapterPanel: React.FC<AssemblyChapterPanelProps> = ({
           <p
             ref={copyRef}
             data-testid={`${chapter.id}-copy`}
-            className="type-body text-[#1C1C1E]/80 leading-relaxed"
+            className="type-body text-text/85 leading-relaxed"
           >
             {panel.copy}
           </p>
@@ -403,15 +403,15 @@ export const AssemblyChapterPanel: React.FC<AssemblyChapterPanelProps> = ({
                 <li key={idx} className="w-full">
                   <div
                     data-spec-divider="true"
-                    className="h-px w-full bg-[rgba(28,28,30,0.14)] origin-left"
+                    className="h-px w-full bg-border-strong origin-left"
                   />
                   <div
                     data-spec-text="true"
-                    className="py-3 flex items-baseline gap-3 type-small text-[#1C1C1E]/85"
+                    className="py-3 flex items-baseline gap-3 type-small text-text/90"
                   >
                     <span
                       aria-hidden="true"
-                      className="text-[0.6875rem] font-mono tabular-nums text-[#8A8580] shrink-0"
+                      className="text-[0.6875rem] font-mono tabular-nums text-primary font-semibold shrink-0"
                     >
                       0{idx + 1}
                     </span>
@@ -420,7 +420,7 @@ export const AssemblyChapterPanel: React.FC<AssemblyChapterPanelProps> = ({
                   {idx === panel.specs!.length - 1 && (
                     <div
                       data-spec-divider="true"
-                      className="h-px w-full bg-[rgba(28,28,30,0.14)] origin-left"
+                      className="h-px w-full bg-border-strong origin-left"
                     />
                   )}
                 </li>
@@ -439,7 +439,7 @@ export const AssemblyChapterPanel: React.FC<AssemblyChapterPanelProps> = ({
                 <Button
                   key={cta.to}
                   to={cta.to}
-                  variant={cta.variant}
+                  variant={cta.variant === 'primary' ? 'orange' : 'outline'}
                 >
                   {cta.label}
                 </Button>

@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'outline';
+  variant?: 'primary' | 'orange' | 'cta' | 'outline' | 'ghost';
   to?: string;
   showArrow?: boolean;
   size?: 'md' | 'lg';
+  'data-testid'?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -20,17 +21,21 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses =
-    'group inline-flex items-center justify-center gap-3 font-sans font-medium tracking-wide whitespace-nowrap shrink-0 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1C1C1E] cursor-pointer';
+    'group inline-flex items-center justify-center gap-3 font-heading font-bold whitespace-nowrap shrink-0 rounded-lg hover:-translate-y-0.5 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus cursor-pointer shadow-theme-hover';
 
   const sizeClasses =
     size === 'lg'
-      ? 'px-8 py-4 text-sm min-h-[52px]'
-      : 'px-6 py-3.5 text-xs uppercase tracking-[0.14em] min-h-[44px]';
+      ? 'px-8 py-4 text-sm tracking-normal min-h-[52px]'
+      : 'px-6 py-3 text-xs uppercase tracking-[0.08em] min-h-[44px]';
 
   const variantClasses =
-    variant === 'primary'
-      ? 'bg-[#1C1C1E] text-[#F3EFE9] border border-[#1C1C1E] hover:bg-[#2E2E32]'
-      : 'bg-transparent text-[#1C1C1E] border border-[#1C1C1E]/30 hover:border-[#1C1C1E] hover:bg-[#1C1C1E]/[0.04]';
+    variant === 'orange' || variant === 'cta'
+      ? 'bg-accent text-white border border-accent hover:bg-accent-hover hover:border-accent-hover'
+      : variant === 'primary'
+        ? 'bg-primary text-[var(--primary-contrast)] border border-primary hover:bg-primary-hover hover:border-primary-hover'
+        : variant === 'ghost'
+          ? 'bg-surface-2 text-text border border-border hover:border-primary hover:text-primary'
+          : 'bg-transparent text-text border border-border-strong hover:border-primary hover:text-primary hover:bg-surface-2';
 
   const combinedClasses = `${baseClasses} ${sizeClasses} ${variantClasses} ${className}`.trim();
 
@@ -40,7 +45,7 @@ export const Button: React.FC<ButtonProps> = ({
       {showArrow && (
         <ArrowRight
           aria-hidden="true"
-          className="w-4 h-4 transition-transform duration-200 ease-out group-hover:translate-x-1.5"
+          className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1.5"
         />
       )}
     </>
@@ -48,7 +53,12 @@ export const Button: React.FC<ButtonProps> = ({
 
   if (to) {
     return (
-      <Link to={to} className={combinedClasses}>
+      <Link
+        to={to}
+        className={combinedClasses}
+        data-testid={props['data-testid']}
+        aria-label={props['aria-label']}
+      >
         {content}
       </Link>
     );

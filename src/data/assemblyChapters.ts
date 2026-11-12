@@ -242,8 +242,8 @@ export const ASSEMBLY_CHAPTERS: ChapterDefinition[] = [
       copy: 'Ex-display, end-of-line and overstock furniture, inspected and delivered across the UK.',
       ctas: [
         {
-          label: 'Browse Clearance',
-          to: '/clearance-deals',
+          label: 'Shop Home & Living Deals',
+          to: '/deals?category=Home%20%26%20Living',
           variant: 'primary',
         },
         {
