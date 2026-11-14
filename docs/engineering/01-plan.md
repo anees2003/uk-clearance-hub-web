@@ -36,7 +36,7 @@ Status: **approved 14 Nov 2026**, with the five additions marked *(added)*. Inpu
   - 3D story: out of the shopping path.
   - Copy: plain words, with a minimal supplier disclosure.
 - Speed: no 3D on the homepage or product pages, and photos resized when uploaded.
-- Security headers in `vercel.json`, and clean-up of the AI Studio leftovers.
+- Security headers, sent by the Express server (Vercel was removed from the plan on 14 Nov), and clean-up of the AI Studio leftovers.
 
 **Out of scope**
 - `bed.glb` compression: an optional pre-launch item, owned by the other repo.
@@ -240,7 +240,10 @@ Development and tests use seed fixtures (`npm run seed`). Production starts empt
 ## 5. Risks and assumptions
 
 **Risks**
-- **Hosting persistence.** Vercel keeps neither a database file nor uploaded photos between deploys. The DB and photo storage need a persistent home, which may cost a little. Phase 4 decides before choosing SQLite.
+- **Hosting persistence.** The database file and photos need a persistent disk, which Vercel can't provide.
+  - The client has IONOS hosting, plan unknown, so hosting is deferred (04-architecture ADR F). The server stays portable, with SQLite and photos on ordinary disk under `DATA_DIR`.
+  - **Node.js needs an IONOS VPS or Cloud Server.** Shared Web Hosting can't run it.
+  - Confirmed in step 40.
 - **Server-rendered content (the largest SEO/AEO risk).** Social preview crawlers and most AI crawlers don't run JavaScript, so a client-only SPA is invisible to them.
   - Rendering public pages on the server touches the router, the data loading, and code that uses `window` (GSAP, Lenis, three.js).
   - Phase 4 compares full SSR, pre-render-on-publish and a content shell.

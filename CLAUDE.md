@@ -3,7 +3,10 @@
 ## 1. Project overview & business model
 **UK Clearance Hub** is a UK clearance product showcase. Shoppers browse products by category and contact the team on WhatsApp or by email. The site also has informative guides and a photorealistic, scroll-driven 3D bedroom story (`bed.glb`).
 
-> **Transition note (14 November 2026):** The rules in §1, §2 rule 1, §7 and §9 marked **(Step 14+)** were approved in `docs/engineering/00-dashboard-impact.md`. They describe the target model. Until the steps in `docs/engineering/02-steps.md` land, the code still uses the old `deals.ts` model described in §7.
+> **Transition note (14 November 2026):** The rules in §1, §2 rule 1, §7 and §9 marked **(Step 14+)** were approved in `docs/engineering/00-dashboard-impact.md`. They describe the target model.
+> - "Step 14+" means "after the original Steps 1–13". The new work has its **own numbering, steps 1–41, in `docs/engineering/02-steps.md`**.
+> - Until those steps land, the code still uses the old `deals.ts` model described in §7.
+> - **Start every new session by reading `docs/engineering/HANDOFF.md`.**
 
 ### Business model (critical)
 - **Showcase, not a shop**: UK Clearance Hub does **NOT** sell or hold stock. Trusted UK suppliers sell and dispatch the orders. **No shopping cart, no checkout, no on-site payments, no customer accounts: ever.**
@@ -470,6 +473,11 @@ This replaces §7.1–7.4 below, which describe the legacy `deals.ts` model and 
 - **Work one step at a time**: Complete only the requested step, verify thoroughly in a real browser (`http://localhost:3000`) at desktop and mobile viewports before moving to the next step, and push to GitHub after each step with the commit message `"Step N - <name>"`.
 - **Respect the business model**: Never add a cart, checkout, payment gateway or customer accounts. The only login is the single owner account. Every product offers exactly "Ask on WhatsApp" and "Email us". IDs, slugs and dates never appear in any UI. Dashboard labels use plain UK English with no technical terms, and the owner must not be able to break the site from it.
 - **Owner simplicity comes first**: Any dashboard field that is not needed to add a product, including every SEO/AEO field, goes in a collapsed "Advanced (optional)" section, closed by default, and the site must work fully when it is left empty. A non-technical owner must be able to add a product without opening it.
+- **Portable server (hosting deferred)**: The client has IONOS hosting, plan not yet confirmed, and **Vercel is removed from the plan**.
+  - The server is one standard Node.js 24 process. SQLite and photos live on ordinary disk under `DATA_DIR`, and every setting comes from environment variables.
+  - Never add provider-specific code or config (`vercel.json`, serverless handlers, provider SDKs).
+  - Node.js needs an IONOS VPS or Cloud Server, because shared Web Hosting can't run it.
+  - See `docs/engineering/04-architecture.md` ADR F.
 - **Protect core 3D systems & semantic theming**: Never break the Step 3 scroll assembly, Step 4 camera timeline, or `MODEL_URL` in `/src/three/modelUrl.ts`. Always use semantic theme tokens (`bg-bg`, `bg-surface`, `text-text`, `text-muted`, `border-border`, `text-primary`, `bg-accent`, etc.) rather than hard-coded hex colours in components or pages.
 - **GSAP lifecycle hygiene**: Always scope animations inside `gsap.context(() => { ... }, scopeRef)` and call `ctx.revert()` on unmount or route change; call `ScrollTrigger.refresh()` after the 3D GLB model loads or page layout changes.
 - **Editorial & legal standards**: Keep UK English, `£` prices, official brand colours/fonts, and the Sketchfab CC BY 4.0 attribution (`"Bed 07 3D model by Doaa Sheha (Sketchfab), CC BY 4.0."`) in the footer at all times.

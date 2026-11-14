@@ -60,7 +60,7 @@ Decision (owner, 14 Nov 2026): build our own owner dashboard and API in Node.js 
 **Config**
 - `package.json`: name, scripts and dependencies
 - `vite.config.ts`: `/api` dev proxy
-- `vercel.json`
+- `vercel.json`: deleted (Vercel removed from the plan on 14 Nov; see 04-architecture ADR F)
 - `.env.example`: real variables such as session secret and DB URL; drop `GEMINI_API_KEY`
 - `index.html`
 
