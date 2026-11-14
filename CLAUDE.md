@@ -1,18 +1,18 @@
 # UK Clearance Hub — Project Guide
 
 ## 1. Project overview & business model
-**UK Clearance Hub** is a commission-based product discovery and referral website for UK clearance shoppers, featuring a photorealistic, scroll-driven 3D bedroom set (`bed.glb`), category deal discovery, and informative guides.
+**UK Clearance Hub** is a UK clearance product showcase. Shoppers browse products by category and contact the team on WhatsApp or by email. The site also has informative guides and a photorealistic, scroll-driven 3D bedroom story (`bed.glb`).
 
-### Business model (critical — applies to all steps from Step 9 onwards)
-- **Referral & product discovery platform**: UK Clearance Hub does **NOT** sell or hold stock directly: **no shopping cart, no checkout, and no on-site payments**.
-- **Supplier fulfilment**: Verified UK suppliers own the stock, process orders, and handle UK delivery, returns, and statutory warranties.
-- **Deal actions**: Each product displays transparent clearance information and links out via **"View Deal"** to the supplier/affiliate URL; customers can also click **"Enquire Now"** or message the team directly on **WhatsApp** (`+44 7344 540043`).
-- **No backend / no admin dashboard**: Pure frontend React 19 + TypeScript application; no admin dashboard or backend database is required.
-- **Primary site categories**:
-  1. **Electronics & Gadgets** (`/deals?category=Electronics+%26+Gadgets`)
-  2. **Home Appliances** (`/deals?category=Home+Appliances`)
-  3. **Home & Living** (`/deals?category=Home+%26+Living` — houses beds, mattresses, headboards, bedside tables, and the 3D bed story)
-  4. **All Deals** (`/deals`)
+> **Transition note (14 November 2026):** The rules in §1, §2 rule 1, §7 and §9 marked **(Step 14+)** were approved in `docs/engineering/00-dashboard-impact.md`. They describe the target model. Until the steps in `docs/engineering/02-steps.md` land, the code still uses the old `deals.ts` model described in §7.
+
+### Business model (critical)
+- **Showcase, not a shop**: UK Clearance Hub does **NOT** sell or hold stock. Trusted UK suppliers sell and dispatch the orders. **No shopping cart, no checkout, no on-site payments, no customer accounts: ever.**
+- **Supplier disclosure (Step 14+)**: Honest, minimal and positive. One line on How it works, on Terms, and next to the contact buttons, e.g. *"We work with trusted UK suppliers who dispatch your order directly."* No supplier names per product, and "supplier"/"referral" wording must not dominate the site.
+- **Product actions (Step 14+)**: Every product has exactly two clear buttons, **"Ask on WhatsApp"** (`+44 7344 540043`) and **"Email us"** (`admin@ukclearancehub.co.uk`), both prefilled with the product name. There is no enquiry form, so the site never handles customers' personal data.
+- **Owner dashboard + API (Step 14+)**: A small Node.js + Express API (`/server`) with **one owner login** stores categories and products. The owner manages them in a mobile-friendly dashboard written in plain UK English with no technical terms. The public site reads only **Published** products and categories with **Show in menu** on.
+- **Categories are data, not code (Step 14+)**: The menu is built from the owner's categories in his chosen menu order. Clicking a category always goes straight to its products.
+- **3D bed story**: Lives on its own page (`/home-living` today) and is **not** part of the shopping path. It must not depend on any category name existing.
+- **Main UX goal**: easy for a non-technical person, visitor and owner alike. A first-time visitor understands the business within 5 seconds, any product is reachable in at most 2 clicks, the header is one simple row, the copy uses plain words and big clear buttons, the homepage is short, and the owner can add a product without help.
 - **Workflow & repository**: Built in Google AI Studio and synced to GitHub repository `anees2003/uk-clearance-hub-web`.
 - **Locale & currency**: Strictly UK English (`colour`, `centre`, `upholstered`, `whilst`, `guarantee`) and Pound Sterling (`£`) pricing throughout.
 
@@ -61,7 +61,7 @@
 ```
 
 ### Package & architecture rules
-1. **No extra packages**: Never install packages beyond the agreed list in `package.json` without an explicit requirement.
+1. **Approved packages only**: The two exact dependency lists above are the approved set. Adding a package requires an ADR in `docs/engineering/04-architecture.md` and the owner's approval, and both lists here must be updated in the same commit. Prefer Node built-ins (`node:crypto` scrypt, `node:test`, `node:sqlite` where suitable) over packages. The server packages for the dashboard and API are added in Phase 4 once hosting is chosen.
 2. **No GSAP `SplitText`**: Do not use the paid Club GSAP `SplitText` plugin. Always use the custom line-splitting utility `/src/animations/splitLines.ts` (`splitLines(element)`), which wraps words, groups them by `offsetTop`, and creates `.split-line-mask` (`overflow: hidden`) and `.split-line-inner` (`display: block`) wrappers with a full `revert()` method.
 3. **Single GSAP registration point**: `ScrollTrigger` and `Flip` are registered once in `/src/animations/gsap.ts`. Always import `{ gsap, ScrollTrigger, Flip }` from `/src/animations/gsap.ts`.
 4. **Lenis + ScrollTrigger sync**: Smooth scrolling is managed by `/src/animations/useLenis.ts` (`useLenis()`), which connects `lenis.on('scroll', ScrollTrigger.update)` and drives `lenis.raf(time * 1000)` inside `gsap.ticker` with `gsap.ticker.lagSmoothing(0)`. Use `getLenisInstance()` or `setLenisLocked(locked)` to control scroll programmatically.
@@ -207,6 +207,12 @@ Implemented in `/src/three/StudioScene.tsx`, `/src/three/BedSet.tsx`, `/src/thre
 
 ## 6. Folder structure
 
+> **Planned (Step 14+):**
+> - **Add** `/server` (Express API: auth, uploads, validation), `/shared` (field rules shared by the dashboard and the server, unit-tested) and the dashboard UI (location set in Phase 4).
+> - **Remove** `src/data/suppliers.ts`, `src/data/leadFlow.ts` and `src/three/SharedProductPreviewCanvas.tsx`.
+>
+> Update the tree below as each step lands.
+
 ```text
 /src
 ├── App.tsx                                  # Root BrowserRouter, ThemeProvider, Layout wrapper, and React.lazy route definitions
@@ -304,7 +310,41 @@ Implemented in `/src/three/StudioScene.tsx`, `/src/three/BedSet.tsx`, `/src/thre
 
 ---
 
-## 7. Referral product data model, deal management & lead flow (Step 10)
+## 7. Product & category data model
+
+### 7.0 Target model (Step 14+, approved 14 November 2026)
+This replaces §7.1–7.4 below, which describe the legacy `deals.ts` model and are deleted once Step 14 lands.
+
+- **Category**:
+  - Basic: Name\*, Show in menu\* (on/off), Menu order\* (drag and drop), Image (optional).
+  - **Advanced (optional)**: Intro (about 40–80 words), Questions & answers (0–5 pairs; new categories start with 3 suggested questions and blank answers).
+- **Product**:
+  - Required: Name\*, Category\* (dropdown), Photos\* (1–6, drag and drop, the first is the main photo), Short description\*, Availability\* (In stock / Out of stock), Status\* (Draft / Published).
+  - Optional (basic): Full description, Price in £ (hidden on the site when empty), Condition (New / Refurbished / Graded / Ex-display, default New), Featured on homepage (on/off).
+  - **Advanced (optional)**: Google title (≤ 60), Google description (≤ 155), the "How this looks on Google" preview. Auto-filled until edited, with "Reset to automatic".
+- **Owner simplicity comes first**:
+  - Every SEO/AEO field lives in a collapsed **"Advanced (optional)"** section, closed by default.
+  - Everything works with it left empty: titles and descriptions are generated, and unanswered questions are hidden.
+  - Adding a product needs only the basic fields.
+- **Automatic, never shown in any UI** (owner or visitor): slug, IDs, created/updated dates. A product's slug is fixed at its first publish and never changes.
+- **Removed**: "Was"/reference price, `priceVerified` and saving badges, `brand`, `subcategory`, `highlights`, `specs`, `delivery`/`deliveredBy`, `supplierId`/supplier name, `dealUrl` and "View Deal", Lead IDs and source-channel tracking, `threeDConfig`, `expiresAt`, `enquiryEnabled`, and `isSample` (replaced by Status).
+- **Rules**:
+  - Only Published products and categories with Show in menu on are public.
+  - Deleting a category that still has products is blocked, with a plain message telling the owner what to do.
+  - Every field is validated on the server, whatever the dashboard already checked.
+- **SEO/AEO rules** (`docs/engineering/01-plan.md` §3e–3f):
+  - Page tags, JSON-LD and the page content are **server-rendered**, because crawlers and WhatsApp previews don't run JavaScript.
+  - Every public page has a unique title (≤ 60), description (≤ 155), absolute canonical, `og:locale` `en_GB` and `<html lang="en-GB">`.
+  - Search, filtered/sorted, empty, 404 and dashboard pages are `noindex,follow`.
+  - **WhatsApp previews**: `og:title` is the name + "£price" (just the name when there is no price), and `og:image` is the main photo as a 1200×630 JPEG of 300 KB or less.
+  - **Product JSON-LD**: `Product` + `Offer` (GBP, availability, `itemCondition`, generated `sku`, **no `seller`**) **only when the product is Published and has a price**. With no price, no Product markup.
+  - **`itemCondition`**: New → `NewCondition`, Refurbished → `RefurbishedCondition`, Graded and Ex-display → `UsedCondition`.
+  - BreadcrumbList on category and product pages; Organization and WebSite (no `SearchAction`) on the homepage; FAQPage on category Q&A and `/faq`.
+  - `robots.txt` allows all crawlers, including AI search and training crawlers, except `/admin` and `/api/`, and lists the sitemap.
+  - The sitemap is generated from Published products and non-empty categories.
+  - **No Google Merchant Center feed**: free listings require on-site checkout.
+
+## 7 (legacy). Referral product data model, deal management & lead flow (Step 10)
 
 ### 7.1 `Deal` data model (`/src/data/deals.ts`) & `Supplier` (`/src/data/suppliers.ts`)
 - **Internal IDs (never rendered in the UI)**:
@@ -428,7 +468,8 @@ Implemented in `/src/three/StudioScene.tsx`, `/src/three/BedSet.tsx`, `/src/thre
 
 ## 9. Working rules for anyone continuing
 - **Work one step at a time**: Complete only the requested step, verify thoroughly in a real browser (`http://localhost:3000`) at desktop and mobile viewports before moving to the next step, and push to GitHub after each step with the commit message `"Step N - <name>"`.
-- **Respect the referral business model**: Never add a shopping cart, checkout flow, payment gateway, or admin dashboard. Every product is fulfilled by verified UK suppliers via `"View Deal"`, `"Enquire Now"`, or WhatsApp, and internal product/supplier IDs (`UKCH-P-XXXX`, `SUP-XXX`) must never appear in visible UI text.
+- **Respect the business model**: Never add a cart, checkout, payment gateway or customer accounts. The only login is the single owner account. Every product offers exactly "Ask on WhatsApp" and "Email us". IDs, slugs and dates never appear in any UI. Dashboard labels use plain UK English with no technical terms, and the owner must not be able to break the site from it.
+- **Owner simplicity comes first**: Any dashboard field that is not needed to add a product, including every SEO/AEO field, goes in a collapsed "Advanced (optional)" section, closed by default, and the site must work fully when it is left empty. A non-technical owner must be able to add a product without opening it.
 - **Protect core 3D systems & semantic theming**: Never break the Step 3 scroll assembly, Step 4 camera timeline, or `MODEL_URL` in `/src/three/modelUrl.ts`. Always use semantic theme tokens (`bg-bg`, `bg-surface`, `text-text`, `text-muted`, `border-border`, `text-primary`, `bg-accent`, etc.) rather than hard-coded hex colours in components or pages.
 - **GSAP lifecycle hygiene**: Always scope animations inside `gsap.context(() => { ... }, scopeRef)` and call `ctx.revert()` on unmount or route change; call `ScrollTrigger.refresh()` after the 3D GLB model loads or page layout changes.
 - **Editorial & legal standards**: Keep UK English, `£` prices, official brand colours/fonts, and the Sketchfab CC BY 4.0 attribution (`"Bed 07 3D model by Doaa Sheha (Sketchfab), CC BY 4.0."`) in the footer at all times.
@@ -439,12 +480,10 @@ Implemented in `/src/three/StudioScene.tsx`, `/src/three/BedSet.tsx`, `/src/thre
 
 Before taking **UK Clearance Hub** live to the public, complete the following business, legal, and asset actions:
 
-- [ ] **1. Replace all sample deals & sample suppliers (`/src/data/deals.ts`, `/src/data/suppliers.ts`)**:
-  - Replace all `isSample: true` entries in `ALL_DEALS` with real supplier clearance products (`isSample: false`).
-  - Obtain **written permission** from each supplier to display their brand name, product descriptions, and product photography.
-  - Verify every `price` and `referencePrice`: only set `priceVerified: true` when you hold dated proof of the supplier's previous selling price or RRP.
-  - Test every `dealUrl` (must be `https://`) to confirm the destination page is live and accepts the appended UTM/referral parameters (`?utm_source=ukclearancehub&utm_medium=referral&utm_campaign=...&ukch_ref=...`).
-  - Once real deals (`isSample: false`) are added, update `/public/sitemap.xml` using the URLs returned by `getSitemapUrls(ALL_DEALS)`.
+- [ ] **1. Real products in the dashboard (Step 14+)**:
+  - The owner adds real products and photos in the dashboard. Delete all sample data before launch.
+  - Obtain **written permission** from each supplier to display their product descriptions and photography.
+  - Check that the generated sitemap lists only Published products.
 - [ ] **2. Legal & compliance sign-off (`/src/pages/LegalPages.tsx`, `/src/pages/ContactPage.tsx`)**:
   - Have a qualified UK legal adviser review `/privacy` (UK GDPR Privacy Notice), `/cookies` (UK PECR Cookie Policy), and `/terms` (Terms of Use & affiliate disclosure), then remove the top `"Editorial / Legal Review Notice"` callout banner in `LegalPages.tsx`.
   - Replace the `"Registered office / correspondence address to be confirmed before launch"` placeholder on `/privacy`, `/terms`, and `/contact` with the official UK business correspondence address and (if registered with the ICO) the ICO registration number.
@@ -453,7 +492,9 @@ Before taking **UK Clearance Hub** live to the public, complete the following bu
 - [ ] **4. Analytics / Marketing scripts (optional)**:
   - If adding analytics or affiliate network pixels later, gate them strictly behind `hasConsent('analytics')` or `hasConsent('marketing')` from `/src/data/cookieConsent.ts` so no non-essential cookies or scripts run before explicit UK PECR opt-in.
 - [ ] **5. Domain, DNS & Search Console**:
-  - Point `https://ukclearancehub.co.uk` to the production host, verify HTTPS redirects, and submit `https://ukclearancehub.co.uk/sitemap.xml` in Google Search Console and Bing Webmaster Tools.
+  - Point `https://ukclearancehub.co.uk` to the production host, verify HTTPS redirects, and submit `https://ukclearancehub.co.uk/sitemap.xml` in Google Search Console and Bing Webmaster Tools (Bing also feeds ChatGPT search).
+  - Check that Core Web Vitals pass on mobile for product and category pages, and that a product link pasted into WhatsApp shows its photo, name and price.
+  - The Google Merchant Center feed was dropped on 14 November 2026: free listings require on-site checkout, which this showcase model doesn't have.
 
 ---
 
@@ -471,6 +512,7 @@ Before taking **UK Clearance Hub** live to the public, complete the following bu
 - **11 November 2026 — Step 11 (Deals-Focused Homepage + Move 3D Bed Story to Home & Living Page)**: Moved the 8-chapter 3D bed assembly scroll story (`StudioScene`, `useAssemblyTimeline`, `ChapterProgress`, `AssemblyChapterPanel`) from `/` to `/home-living` (`HomeLivingPage.tsx`) with updated hero copy (`"Home & Living"`, `"Build your bedroom."` / `"For less."`), updated final chapter CTAs (`"Shop Home & Living Deals"` and `"Bed Size Guide"`), and a lower solid `--bg` section featuring the live Home & Living deals grid, buying guide cards, and WhatsApp CTA; updated `Preloader` so `/` does not wait for `bed.glb`; and built the new 9-section deals-focused homepage at `/` (`HomePage.tsx`, `HeroBannerCarousel.tsx`, `homePageData.ts`) including the 3-slide auto-advancing hero carousel (with live rotating 3D bed preview on Slide 3), below-banner search bar + suggestion chips, Trust Strip, Shop by Category tiles with live counts and lowest prices, 8 Featured Clearance Deals carousel, 8 New Offers grid, 3-step How It Works + commission line, 4 Product Condition Guide cards, Supplier & Delivery Info + `/contact?topic=supplier`, and Follow Us + WhatsApp CTA.
 - **12 November 2026 — Step 12 (Privacy, Cookies, Legal Pages, Page Transitions & SEO)**: Audited and removed unverified percentage/warranty/delivery claims site-wide; added `/privacy`, `/cookies`, `/terms`, and `/how-it-works` (`LegalPages.tsx`) with UK GDPR/PECR/referral disclosures and the adviser review notice; implemented the UK PECR cookie consent banner & settings modal (`cookieConsent.ts`, `CookieConsentContext.tsx`, `CookieConsentBanner.tsx`) with equal-prominence `"Accept all"` and `"Reject non-essential"` buttons, versioned `localStorage` persistence, and `hasConsent()`; refined route transitions (`Layout.tsx`, `ScrollToTop.tsx`) with a top gradient progress bar (`sky blue → orange`), ~520ms fade/slide transition, and `/deals` scroll restoration on browser back (`POP`); implemented per-route SEO & JSON-LD (`useSeo` in `/src/utils/seo.ts`) with `Organization`, `BreadcrumbList`, and sample-aware `Product` schemas; added `/public/robots.txt`, `/public/sitemap.xml`, and a branded 404 page (`NotFoundPage.tsx`).
 - **12 November 2026 — Step 13 (Mobile Polish, Performance, Accessibility & Final QA — Project Complete)**: Excluded `isSample` deals from `/public/sitemap.xml` and set `<meta name="robots" content="noindex,follow">` on sample deal pages via `getDealRobotsDirective`; code-split all 15 routes with `React.lazy` + `<Suspense>` and isolated Three.js into on-demand chunks (`studioProgressStore.ts`, `vite.config.ts`); added adaptive 3D quality (`PerformanceMonitor`, mobile DPR `[1, 1.5]`, offscreen/hidden-tab rendering pause, Draco decoder support, and material disposal on unmount); completed responsive mobile polish (`360px`–`1440px`, `>= 44×44px` tap targets, `>= 14px` mobile text, `>= 16px` mobile inputs, `100dvh` sections, safe-area insets, and auto-hiding `FloatingWhatsAppButton` when overlays open); implemented WCAG 2.2 AA accessibility (`"Skip to main content"`, `useModalFocusTrap` with `Escape` and focus return, `aria-describedby` form errors, `aria-live` status updates, hero carousel Play/Pause toggle, `aria-hidden` 3D canvases with screen-reader descriptions, and `prefers-reduced-motion` support); and added the Pre-Launch Checklist in Section 10.
+- **14 November 2026 — Direction change (rules only, no code yet)**: The owner approved an in-house owner dashboard and Express API, owner-defined categories, a simplified product model (no "Was" price, savings badges, supplier IDs, `dealUrl`, Lead IDs or `threeDConfig`), "Ask on WhatsApp" and "Email us" as the only product actions, minimal supplier disclosure, and the main UX goal (5-second clarity, products within 2 clicks, one header row). See `docs/engineering/00-dashboard-impact.md`. Updated §1, §2 rule 1, §6 (planned), §7.0, §9 and §10 item 1. Later the same day: added the SEO/AEO rules and the Advanced (optional) fields to §7.0, the "owner simplicity first" rule to §9, and Bing, Core Web Vitals, the WhatsApp preview check and the Merchant Center decision to §10 item 5 (`docs/engineering/01-plan.md` §3e–3f).
 
 
 
