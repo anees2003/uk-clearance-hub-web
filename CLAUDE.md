@@ -65,6 +65,7 @@
 2. **No GSAP `SplitText`**: Do not use the paid Club GSAP `SplitText` plugin. Always use the custom line-splitting utility `/src/animations/splitLines.ts` (`splitLines(element)`), which wraps words, groups them by `offsetTop`, and creates `.split-line-mask` (`overflow: hidden`) and `.split-line-inner` (`display: block`) wrappers with a full `revert()` method.
 3. **Single GSAP registration point**: `ScrollTrigger` and `Flip` are registered once in `/src/animations/gsap.ts`. Always import `{ gsap, ScrollTrigger, Flip }` from `/src/animations/gsap.ts`.
 4. **Lenis + ScrollTrigger sync**: Smooth scrolling is managed by `/src/animations/useLenis.ts` (`useLenis()`), which connects `lenis.on('scroll', ScrollTrigger.update)` and drives `lenis.raf(time * 1000)` inside `gsap.ticker` with `gsap.ticker.lagSmoothing(0)`. Use `getLenisInstance()` or `setLenisLocked(locked)` to control scroll programmatically.
+5. **Project skills (`/.claude/skills/`)**: The official GSAP skills (`gsap-*`) and `karpathy-guidelines` are vendored here so they load in every session, including cloud sessions (sources in `/.claude/skills/SOURCES.md`). **The rules in this file take precedence over those skills**: never use `SplitText` (use `splitLines.ts`), never install `@gsap/react` or any other extra package (use `gsap.context()` + `ctx.revert()` inside `useEffect`), and always import GSAP from `/src/animations/gsap.ts`.
 
 ---
 
