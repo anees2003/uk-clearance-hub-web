@@ -1,25 +1,36 @@
 # HANDOFF — read this first
 
-Last updated: **15 Nov 2026**, Phase 5, **step 1 done**. Branch: `claude/hopeful-ride-igp39a`. Not pushed. No PR.
+Last updated: **15 Nov 2026**, Phase 5, **steps 1–2 done**. Branch: `claude/hopeful-ride-igp39a`. Not pushed. No PR.
 
 ## Current state
 - **Phases 0–4 approved. Phase 5 (implementation) is in progress.**
-- **Done:** step 1, app and route error boundaries (commit "Step 1 - App and route error boundaries").
-  - `src/components/ui/ErrorBoundary.tsx` is used in 3 places:
-    - the App boundary in `App.tsx`
-    - the Route boundary around `<Outlet/>` in `Layout.tsx`, which resets on path change
-    - a **silent** boundary (`fallback={null}`) around the shared 3D canvas in `Layout.tsx`, which step 2 replaces with a visible panel
-  - Messages: "Sorry, this page didn't load", with Try again, Home, Ask on WhatsApp and Email us; and "This page needs a refresh", with Reload, for page code that failed to load.
-- **Verified in step 1:**
-  - **First load of `/home-living` with jsDelivr, githack and gstatic blocked:** the preloader exits in about 3 s and the route fallback shows. It does not hang.
-  - **`/about` blocked:** the page text stays.
-  - **"Needs a refresh":** checked on a production build with a page's code file removed.
-  - Checked at 1366px and 375px, dark and light, with all fallback text at 4.5:1 or more.
-- **Tests:** `npm test` passes 66/66; `npm run lint` and `npm run build` pass. `npm audit` still shows 1 low finding (esbuild, fixed in step 6).
-- **Findings carried into later steps** (written into `02-steps.md`):
+- **Done: step 1, app and route error boundaries.**
+  - `ErrorBoundary.tsx` is used as the App boundary in `App.tsx` and as the Route boundary around `<Outlet/>` in `Layout.tsx`, which resets on path change.
+  - Messages: "Sorry, this page didn't load", with Try again, Home, Ask on WhatsApp and Email us; and "This page needs a refresh", with Reload.
+- **Done: step 2, 3D boundary and fallback.**
+  - **Panel:** `ThreeUnavailablePanel.tsx`, in `inline` and `background` versions.
+  - **Shared "3D failed" signal:** `markStudioFailed()` / `useStudioFailed()` in `studioProgressStore.ts`. It is raised by the boundaries around:
+    - the `StudioScene` canvas
+    - the shared canvas in `Layout`, after which every view slot swaps to the panel
+    - the lazy 3D slots in `HeroBannerCarousel` and `BedDetailPage`
+  - **Preloader:** settles via `isStudioLoadSettled`, which covers finished, failed, or `STUDIO_PRELOADER_MAX_WAIT_MS` (10 s) passed.
+- **Verified in step 2:**
+  - **First load with jsDelivr, githack and gstatic blocked**, on `/home-living`, `/about`, `/contact`, `/mattress-guide` and the 3D deal page, at 1366px and 375px, dark and light: the panel shows, there's no "Sorry" box, all text stays, and contrast is 5.02:1 or more.
+  - **3D code files aborted (production build):** the homepage stays up with the panel on slide 3; the deal page keeps its content.
+  - **Stalled `bed.glb`:** the page stays usable, with no panel.
+  - **`bed.glb` delayed 14 s, then successful:** the assembly matches a control load at the same scroll position, with no panel.
+  - **Nothing blocked:** 3D renders everywhere, the assembly follows scroll, and there are no page errors.
+- **Tests:** `npm test` passes 75/75; `npm run lint` and `npm run build` pass. `npm audit` still shows 1 low finding (esbuild, fixed in step 6).
+- **Open findings:**
   - **Step 3:** `text-primary-contrast` generates no CSS, because the token isn't in `index.css` `@theme`.
-  - **Step 2:** add a maximum preloader wait for a *stalled* (not failed) 3D request.
-- **Browser testing tip:** the Playwright MCP's `browser_run_code_unsafe` with `page.context().route(...)` blocks hosts from the very first request. Use it for CDN-failure checks. Its output folder `.playwright-mcp/` must not be committed; delete it after use.
+  - **Not scheduled yet; the owner decides:** the `/home-living` preloader leaves after about 3 s even while `bed.glb` is still loading, because its progress signal settles before the model is counted. It's invisible on normal connections. See the step 2 notes in `02-steps.md`.
+- **Browser testing tips:**
+  - Use the Playwright MCP's `browser_run_code_unsafe`.
+  - **Block a host:** `page.context().route(pattern, r => r.abort())`, which works from the very first request.
+  - **Stall a file:** `route(pattern, () => {})`.
+  - **Delay a file:** `route.fetch()`, wait, then `route.fulfill()`.
+  - **Simulate a missing page-code file:** abort `/assets/<Name>-*.js` on the production preview. Don't rename files, because a running `vite preview` caches its file list.
+  - **Clean up afterwards:** stop any `vite preview` left on port 4173. `.playwright-mcp/` is git-ignored; delete it after use.
 - **Dev:** `npm run dev` serves http://localhost:3000. In the Claude desktop app, `.claude/launch.json` has a `dev` entry for the preview browser.
 - **Git identity:** none is configured on this machine. The Phase 0–3 commit used the repo owner's GitHub noreply identity via `git -c user.name=… -c user.email=…` for that commit only. Do the same, or ask the owner to set `git config`.
 
@@ -58,11 +69,11 @@ Last updated: **15 Nov 2026**, Phase 5, **step 1 done**. Branch: `claude/hopeful
 - **Security:** scrypt via `node:crypto`; DB-backed rate limits; `__Host-` session cookie; CSRF token plus `Origin` check; upload re-encoding with GPS stripped; daily backups plus an off-site S3-compatible copy.
 
 ## Next step to do
-**Step 2: 3D boundary and fallback**, in `02-steps.md`.
-- Show the owner the plan first and wait for approval, as with step 1.
-- It also takes over step 1's silent boundary in `Layout.tsx`, and adds the preloader maximum wait.
+**Step 3: Accessible colour tokens (C1)**, in `02-steps.md`.
+- Show the owner the plan first and wait for approval.
+- Include the `text-primary-contrast` / `@theme` registration fix noted in step 3.
 
-Steps 2–8 and 39 need nothing from outside.
+Steps 3–8 and 39 need nothing from outside.
 
 Waiting on the owner:
 - the HDR and font downloads (steps 7 and 36)

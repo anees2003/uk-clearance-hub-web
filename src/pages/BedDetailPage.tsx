@@ -47,6 +47,9 @@ import { Button } from '../components/ui/Button';
 import { ProductCard } from '../components/products/ProductCard';
 import { DealImagePlaceholder } from '../components/products/DealImagePlaceholder';
 import { ReservationEnquiryModal } from '../components/products/ReservationEnquiryModal';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import { ThreeUnavailablePanel } from '../components/ui/ThreeUnavailablePanel';
+import { markStudioFailed } from '../utils/studioProgressStore';
 import {
   buildBreadcrumbJsonLd,
   buildDealProductJsonLd,
@@ -399,6 +402,11 @@ export const BedDetailPage: React.FC = () => {
                 onWheel={() => setHasInteractedWith3D(true)}
                 className="relative w-full h-[52dvh] lg:h-[68dvh] min-h-[380px] max-h-[680px] rounded-xl border border-border bg-surface-2 overflow-hidden cursor-grab active:cursor-grabbing shadow-theme"
               >
+                {/* If the 3D code itself fails to load, show the panel instead of failing the page */}
+                <ErrorBoundary
+                  fallback={<ThreeUnavailablePanel />}
+                  onError={markStudioFailed}
+                >
                 <Suspense
                   fallback={
                     <div
@@ -432,6 +440,7 @@ export const BedDetailPage: React.FC = () => {
                     onBedSetReady={handleBedSetReady}
                   />
                 </Suspense>
+                </ErrorBoundary>
 
                 {/* Top-left viewer category & active size badge */}
                 <div className="pointer-events-none absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2">

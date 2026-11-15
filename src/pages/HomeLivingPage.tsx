@@ -177,6 +177,7 @@ export const HomeLivingPage: React.FC = () => {
           initialAssembled={false}
           onBedSetReady={handleBedSetReady}
           className="w-full h-full pointer-events-none"
+          fallbackVariant="background"
         />
       </div>
 

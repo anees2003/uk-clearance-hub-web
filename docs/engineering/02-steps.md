@@ -38,7 +38,16 @@ Sizes: **S** is under half a day, **M** about a day, **L** two days or more.
 - **Verify:** Phase 0 B1 repro: block `bed.glb`, go to `/about`. The route fallback appears, and the page is never blank.
 - **Size:** S. **Needs:** —
 
-### 2. 3D boundary and fallback — P0-2, ADR A
+### 2. 3D boundary and fallback — P0-2, ADR A — ✅ DONE (15 Nov 2026)
+> **As built:**
+> - **Panel:** `ThreeUnavailablePanel` in two versions, `inline` and `background` (the latter for `/home-living`).
+> - **Shared signal:** `markStudioFailed()` / `useStudioFailed()` in `studioProgressStore`.
+> - **Boundaries** around: the `StudioScene` canvas; the shared canvas in `Layout` (which raises the signal so every view slot swaps to the panel); and the lazy 3D slots in `HeroBannerCarousel` and `BedDetailPage`.
+> - **Preloader:** settles via `isStudioLoadSettled`, which covers finished, failed, or 10 s passed.
+>
+> **Finding (not fixed, owner informed):**
+> - On `/home-living` the preloader already leaves after about 3 s even while `bed.glb` is stalled or slow, because its progress signal settles before the model is counted. On a normal connection the bed arrives in about 1.4 s, so nobody sees a difference.
+> - A bed that arrives late, for example after 14 s, assembles to match the current scroll position (checked against a control load). The 10 s cap is therefore a backstop.
 - **Files:** `StudioScene.tsx`, `SharedViewCanvas.tsx`, `HeroBannerCarousel.tsx` (while it exists), `studioProgressStore.ts` (`failed` flag), `Preloader.tsx`
 - **Done when:**
   - A 3D boundary wraps every `<Canvas>`/`View` and shows a static "3D view unavailable" panel. This replaces step 1's silent `fallback={null}` around the shared canvas in `Layout`.

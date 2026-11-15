@@ -229,7 +229,8 @@ Implemented in `/src/three/StudioScene.tsx`, `/src/three/BedSet.tsx`, `/src/thre
 ├── utils/
 │   ├── seo.ts                               # useSeo hook, getDealRobotsDirective, getSitemapUrls, OpenGraph/Twitter & JSON-LD builders
 │   ├── seo.test.ts                          # Unit tests for SEO meta lengths, sample noindex/sitemap filtering & JSON-LD
-│   ├── studioProgressStore.ts               # Lightweight pub/sub store decoupling Preloader & Layout from Three.js bundles
+│   ├── studioProgressStore.ts               # Pub/sub store: 3D load progress, shared "3D failed" signal, isStudioLoadSettled (10s preloader cap)
+│   ├── studioProgressStore.test.ts          # Unit tests for the settle rule, max wait and the "3D failed" signal
 │   └── useModalFocusTrap.ts                 # WCAG 2.2 AA focus trap, Escape key handler & trigger focus restoration hook
 ├── animations/
 │   ├── gsap.ts                              # Registers GSAP ScrollTrigger & Flip once and exports them
@@ -289,7 +290,9 @@ Implemented in `/src/three/StudioScene.tsx`, `/src/three/BedSet.tsx`, `/src/thre
 │       ├── Container.tsx                    # 1440px max-width container with fluid horizontal padding
 │       ├── EditorialPageHero.tsx            # Shared hero component for informative/legal pages with useSeo, line-split heading & optional 3D slot
 │       ├── ErrorBoundary.tsx                # App/route/3D error boundary + fallback ("Sorry, this page didn't load" / "This page needs a refresh")
-│       ├── ErrorBoundary.test.ts            # Unit tests for error classification, reset rule and fallback markup
+│       ├── ErrorBoundary.test.ts            # Unit tests for error classification, reset rule, onError callback and fallback markup
+│       ├── ThreeUnavailablePanel.tsx        # "3D view unavailable" panel (inline slot / full-screen background); imports no three.js
+│       ├── ThreeUnavailablePanel.test.ts    # Unit tests for both panel variants and token-only styling
 │       ├── Eyebrow.tsx                      # Uppercase 0.2em tracked eyebrow label with optional accent dot
 │       ├── FilmGrain.tsx                    # Subtle fixed SVG noise overlay
 │       ├── FloatingWhatsAppButton.tsx       # Fixed bottom-right #25D366 WhatsApp button (auto-hides when modals/menus/sheets/banners open)

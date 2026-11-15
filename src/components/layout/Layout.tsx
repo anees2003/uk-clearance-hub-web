@@ -2,7 +2,10 @@ import React, { Suspense, lazy, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { gsap, ScrollTrigger } from '../../animations/gsap';
 import { useLenis } from '../../animations/useLenis';
-import { useHasMountedSharedView } from '../../utils/studioProgressStore';
+import {
+  markStudioFailed,
+  useHasMountedSharedView,
+} from '../../utils/studioProgressStore';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { FilmGrain } from '../ui/FilmGrain';
 import { FloatingWhatsAppButton } from '../ui/FloatingWhatsAppButton';
@@ -133,9 +136,9 @@ export const Layout: React.FC = () => {
       <Header />
       {hasMountedSharedView && (
         // The shared 3D canvas sits outside the page, so its errors would skip the
-        // route boundary. If it fails, render nothing and keep the page (step 2
-        // adds a visible "3D view unavailable" panel).
-        <ErrorBoundary fallback={null}>
+        // route boundary. If it fails, keep the page and raise the "3D failed"
+        // signal: each 3D slot then shows its own "3D view unavailable" panel.
+        <ErrorBoundary fallback={null} onError={markStudioFailed}>
           <Suspense fallback={null}>
             <LazySharedViewCanvas />
           </Suspense>

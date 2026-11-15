@@ -56,6 +56,16 @@ test('shouldResetBoundary resets only when there is an error and the reset key c
   assert.equal(shouldResetBoundary(true, undefined, undefined), false);
 });
 
+test('componentDidCatch passes the caught error to the onError callback', () => {
+  const caught: unknown[] = [];
+  const boundary = new ErrorBoundary({ onError: (error: unknown) => caught.push(error) });
+  const error = new Error('Could not load bed.glb');
+  boundary.componentDidCatch(error);
+  assert.deepEqual(caught, [error]);
+  // Without a callback it must not throw.
+  new ErrorBoundary({}).componentDidCatch(error);
+});
+
 test('ErrorFallback (general) offers Try again, Home, WhatsApp and Email in plain English', () => {
   const html = renderToStaticMarkup(
     createElement(ErrorFallback, { kind: 'general', onRetry: () => {} })

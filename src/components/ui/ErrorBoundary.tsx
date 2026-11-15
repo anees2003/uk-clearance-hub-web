@@ -107,6 +107,8 @@ interface ErrorBoundaryProps {
   resetKey?: unknown;
   /** Custom fallback. Pass `null` to render nothing when the subtree fails. */
   fallback?: React.ReactNode;
+  /** Called once with the caught error (e.g. to raise the shared "3D failed" signal). */
+  onError?: (error: unknown) => void;
 }
 
 interface ErrorBoundaryState {
@@ -119,6 +121,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
     return { error, kind: classifyBoundaryError(error) };
+  }
+
+  componentDidCatch(error: unknown): void {
+    this.props.onError?.(error);
   }
 
   componentDidUpdate(prevProps: ErrorBoundaryProps): void {

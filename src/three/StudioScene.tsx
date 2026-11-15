@@ -31,8 +31,14 @@ import { useTheme } from '../context/ThemeContext';
 import { STUDIO_3D_THEME_CONFIG, ThemeMode } from '../data/theme';
 import {
   StudioLoadingProgress,
+  markStudioFailed,
   publishStudioProgress,
 } from '../utils/studioProgressStore';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import {
+  ThreeUnavailablePanel,
+  ThreeUnavailableVariant,
+} from '../components/ui/ThreeUnavailablePanel';
 import { BedSet } from './BedSet';
 import { BedSetHandle } from './bedParts';
 
@@ -107,6 +113,8 @@ export interface StudioSceneProps {
   onProgressChange?: (state: StudioLoadingProgress) => void;
   /** Optional className for the outer wrapper */
   className?: string;
+  /** What to show if the 3D model fails: a panel in the slot, or a plain backdrop with a small note. */
+  fallbackVariant?: ThreeUnavailableVariant;
 }
 
 const ProgressBridge: React.FC<{
@@ -505,6 +513,7 @@ export const StudioScene = forwardRef<BedSetHandle, StudioSceneProps>(
       onBedSetReady,
       onProgressChange,
       className = 'w-full h-full',
+      fallbackVariant = 'inline',
     },
     ref
   ) => {
@@ -588,6 +597,10 @@ export const StudioScene = forwardRef<BedSetHandle, StudioSceneProps>(
         <ProgressBridge onProgressChange={onProgressChange} />
         {showCornerProgress && <CornerLoadingIndicator />}
 
+        <ErrorBoundary
+          fallback={<ThreeUnavailablePanel variant={fallbackVariant} className="absolute inset-0" />}
+          onError={markStudioFailed}
+        >
         <Canvas
           aria-hidden="true"
           shadows={CANVAS_SHADOWS_CONFIG}
@@ -643,6 +656,7 @@ export const StudioScene = forwardRef<BedSetHandle, StudioSceneProps>(
             />
           )}
         </Canvas>
+        </ErrorBoundary>
       </div>
     );
   }

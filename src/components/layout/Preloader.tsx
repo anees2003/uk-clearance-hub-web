@@ -3,7 +3,12 @@ import { useLocation } from 'react-router-dom';
 import { gsap } from '../../animations/gsap';
 import { getLenisInstance } from '../../animations/useLenis';
 import { useTheme } from '../../context/ThemeContext';
-import { useStudioProgressSubscription } from '../../utils/studioProgressStore';
+import {
+  STUDIO_PRELOADER_MAX_WAIT_MS,
+  isStudioLoadSettled,
+  useStudioFailed,
+  useStudioProgressSubscription,
+} from '../../utils/studioProgressStore';
 import { formatPreloaderCounter } from '../../data/assemblyChapters';
 import { doesRouteWaitFor3DModel } from '../../data/homePageData';
 import { getBrandLogoUrl } from '../../data/brand';
@@ -33,7 +38,10 @@ export const Preloader: React.FC = () => {
     return hasPreloaderCompletedOnce;
   });
 
-  const { progress, active, loaded, total } = useStudioProgressSubscription();
+  const studioProgress = useStudioProgressSubscription();
+  const { progress, active, loaded, total } = studioProgress;
+  const studioFailed = useStudioFailed();
+  const [maxWaitPassed, setMaxWaitPassed] = useState(false);
 
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const logoInnerRef = useRef<HTMLDivElement | null>(null);
@@ -132,9 +140,12 @@ export const Preloader: React.FC = () => {
     if (!waitFor3DModel) {
       rawTarget = 100;
     } else {
-      const glbFinished =
-        !active && (progress >= 100 || (total > 0 && loaded >= total));
-      rawTarget = glbFinished ? 100 : Math.min(99, Math.max(0, progress));
+      // Finished, failed, or waited long enough (a stalled download): stop waiting.
+      const settled = isStudioLoadSettled(studioProgress, {
+        failed: studioFailed,
+        maxWaitPassed,
+      });
+      rawTarget = settled ? 100 : Math.min(99, Math.max(0, progress));
     }
 
     // Never jump backwards
@@ -164,7 +175,14 @@ export const Preloader: React.FC = () => {
         }
       },
     });
-  }, [progress, active, loaded, total, dismissed, waitFor3DModel]);
+  }, [progress, active, loaded, total, dismissed, waitFor3DModel, studioFailed, maxWaitPassed]);
+
+  // Never wait more than STUDIO_PRELOADER_MAX_WAIT_MS for the 3D model.
+  useEffect(() => {
+    if (dismissed || !waitFor3DModel) return;
+    const timer = window.setTimeout(() => setMaxWaitPassed(true), STUDIO_PRELOADER_MAX_WAIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [dismissed, waitFor3DModel]);
 
   // Safety fallback if a 3D route has 0 active items in useProgress
   useEffect(() => {

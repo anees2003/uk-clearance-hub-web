@@ -12,7 +12,8 @@ import {
 import { gsap, ScrollTrigger } from '../animations/gsap';
 import { useTheme } from '../context/ThemeContext';
 import { STUDIO_3D_THEME_CONFIG, ThemeMode } from '../data/theme';
-import { registerSharedViewMount } from '../utils/studioProgressStore';
+import { registerSharedViewMount, useStudioFailed } from '../utils/studioProgressStore';
+import { ThreeUnavailablePanel } from '../components/ui/ThreeUnavailablePanel';
 import { BedSet } from './BedSet';
 import { BED_PART_KEYS, BedPartKey, BedSetHandle } from './bedParts';
 import { computeMattressSquashScaleY } from '../data/informativePages';
@@ -335,6 +336,28 @@ const FloatingPillowsRig: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
 };
 
 /**
+ * A 3D View slot, or the "3D view unavailable" panel once the shared 3D layer has failed.
+ */
+const SharedViewSlot: React.FC<{ className: string; children: React.ReactNode }> = ({
+  className,
+  children,
+}) => {
+  const failed = useStudioFailed();
+  if (failed) {
+    return (
+      <div className={className}>
+        <ThreeUnavailablePanel />
+      </div>
+    );
+  }
+  return (
+    <View aria-hidden="true" className={className}>
+      {children}
+    </View>
+  );
+};
+
+/**
  * 3D Mattress View for /mattress-guide hero (rotates slowly and squashes with firmness 1-10)
  */
 export const MattressHeroView: React.FC<{ firmness: number }> = ({
@@ -370,11 +393,11 @@ export const MattressHeroView: React.FC<{ firmness: number }> = ({
         </span>
       </div>
 
-      <View aria-hidden="true" className="w-full aspect-[4/3]">
+      <SharedViewSlot className="w-full aspect-[4/3]">
         <Suspense fallback={null}>
           <RotatingMattressRig firmness={firmness} theme={theme} />
         </Suspense>
-      </View>
+      </SharedViewSlot>
     </div>
   );
 };
@@ -406,11 +429,11 @@ export const AboutFullBedHeroView: React.FC = () => {
         </span>
       </div>
 
-      <View aria-hidden="true" className="w-full aspect-[4/3]">
+      <SharedViewSlot className="w-full aspect-[4/3]">
         <Suspense fallback={null}>
           <RotatingFullBedRig theme={theme} />
         </Suspense>
-      </View>
+      </SharedViewSlot>
     </div>
   );
 };
@@ -442,11 +465,11 @@ export const ContactPillowsView: React.FC = () => {
         </span>
       </div>
 
-      <View aria-hidden="true" className="w-full aspect-[16/10]">
+      <SharedViewSlot className="w-full aspect-[16/10]">
         <Suspense fallback={null}>
           <FloatingPillowsRig theme={theme} />
         </Suspense>
-      </View>
+      </SharedViewSlot>
     </div>
   );
 };
@@ -478,14 +501,11 @@ export const HomeHeroBedPreviewView: React.FC = () => {
         </span>
       </div>
 
-      <View
-        aria-hidden="true"
-        className="w-full aspect-[16/10] sm:aspect-[16/9]"
-      >
+      <SharedViewSlot className="w-full aspect-[16/10] sm:aspect-[16/9]">
         <Suspense fallback={null}>
           <RotatingFullBedRig theme={theme} />
         </Suspense>
-      </View>
+      </SharedViewSlot>
     </div>
   );
 };

@@ -29,6 +29,9 @@ import { DealImagePlaceholder } from '../products/DealImagePlaceholder';
 import { Button } from '../ui/Button';
 import { Container } from '../ui/Container';
 import { Eyebrow } from '../ui/Eyebrow';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { ThreeUnavailablePanel } from '../ui/ThreeUnavailablePanel';
+import { markStudioFailed } from '../../utils/studioProgressStore';
 
 const LazyHomeHeroBedPreviewView = React.lazy(() =>
   import('../../three/SharedViewCanvas').then((m) => ({
@@ -468,6 +471,15 @@ export const HeroBannerCarousel: React.FC = () => {
             >
               {activeSlide.visualType === '3d-bed' ? (
                 <div className="space-y-3">
+                  {/* If the 3D code itself fails to load, show the panel instead of failing the homepage */}
+                  <ErrorBoundary
+                    fallback={
+                      <div className="w-full h-[280px] sm:h-[340px] lg:h-[380px] rounded-xl border border-border-strong overflow-hidden">
+                        <ThreeUnavailablePanel />
+                      </div>
+                    }
+                    onError={markStudioFailed}
+                  >
                   <Suspense
                     fallback={
                       <div
@@ -478,6 +490,7 @@ export const HeroBannerCarousel: React.FC = () => {
                   >
                     <LazyHomeHeroBedPreviewView />
                   </Suspense>
+                  </ErrorBoundary>
                   <div className="flex items-center justify-between gap-4 px-1 text-xs text-muted">
                     <span>
                       Scroll-driven 9-part 3D bedroom set on Home &amp; Living
