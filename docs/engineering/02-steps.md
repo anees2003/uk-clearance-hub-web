@@ -24,7 +24,11 @@ Sizes: **S** is under half a day, **M** about a day, **L** two days or more.
 
 ## Stage A — Make the current site safe (no backend)
 
-### 1. App and route error boundaries — P0-2, ADR A
+### 1. App and route error boundaries — P0-2, ADR A — ✅ DONE (15 Nov 2026)
+> **As built:**
+> - The shared 3D canvas in `Layout` sits **outside** `<Outlet/>`, so its errors skip the route boundary. It got its own silent boundary (`fallback={null}`).
+> - The route fallback is therefore verified on `/home-living`. On `/about`, the page simply keeps its text.
+> - The second message reads "This page needs a refresh", because it fits both a deploy and a network failure.
 - **Files:** `src/components/ui/ErrorBoundary.tsx` (new), `Layout.tsx`, `App.tsx`, `ui/index.ts`
 - **Done when:**
   - An **App** boundary sits outside the router.
@@ -37,9 +41,10 @@ Sizes: **S** is under half a day, **M** about a day, **L** two days or more.
 ### 2. 3D boundary and fallback — P0-2, ADR A
 - **Files:** `StudioScene.tsx`, `SharedViewCanvas.tsx`, `HeroBannerCarousel.tsx` (while it exists), `studioProgressStore.ts` (`failed` flag), `Preloader.tsx`
 - **Done when:**
-  - A 3D boundary wraps every `<Canvas>`/`View` and shows a static "3D view unavailable" panel.
+  - A 3D boundary wraps every `<Canvas>`/`View` and shows a static "3D view unavailable" panel. This replaces step 1's silent `fallback={null}` around the shared canvas in `Layout`.
   - The page text stays.
-  - The Preloader exits when the 3D asset fails.
+  - The Preloader exits when the 3D asset fails. A **failed** request already exits in about 3 s (checked in step 1).
+  - Add a **maximum wait of about 10 s** for a **stalled** request that never fails, with a test.
 - **Verify:** block jsDelivr, raw.githack.com and gstatic in turn on `/home-living`, `/about`, `/contact` and `/mattress-guide`. No blank page (S7), and the preloader exits.
 - **Size:** M. **Needs:** 1
 
@@ -57,8 +62,10 @@ Sizes: **S** is under half a day, **M** about a day, **L** two days or more.
     - `--success-text`: light `#166534`
     - light `--primary`: `#0F63C4`
     - footer on-navy text tokens
+  - **Found in step 1:** `--primary-contrast` is not registered in `index.css` `@theme`, so the `text-primary-contrast` utility generates **no CSS**. It is used in about 15 places, including the "All Categories" chip at 2.54:1. Register it, or replace it with `--on-primary`.
   - `theme.test.ts`:
     - checks every text/fill pair (text ≥ 4.5, UI parts ≥ 3)
+    - fails if a `text-*`/`bg-*` colour utility used in `src/` has no matching `@theme` token
     - fails if `theme.css`, `theme.ts` and the CLAUDE.md table differ
     - fails on `text-white` used on a brand fill
 - **Verify:** tests, plus the Phase 0 contrast scan on `/`, `/deals`, a product, `/faq`, `/about` and `/terms` in both themes, with 0 failures (S6).

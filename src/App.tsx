@@ -15,6 +15,7 @@ import {
 import { ThemeProvider } from './context/ThemeContext';
 import { CookieConsentProvider } from './context/CookieConsentContext';
 import { Layout } from './components/layout';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 const HomePage = lazy(() =>
   import('./pages/HomePage').then((m) => ({ default: m.HomePage }))
@@ -89,6 +90,7 @@ const LegacyBedSlugRedirect: React.FC = () => {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <ThemeProvider>
       <CookieConsentProvider>
         <BrowserRouter>
@@ -126,6 +128,7 @@ export default function App() {
         </BrowserRouter>
       </CookieConsentProvider>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

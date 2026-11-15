@@ -288,6 +288,8 @@ Implemented in `/src/three/StudioScene.tsx`, `/src/three/BedSet.tsx`, `/src/thre
 │       ├── ChapterProgress.tsx              # Right-edge 7-stop vertical progress bar (desktop) & top 2px bar (mobile)
 │       ├── Container.tsx                    # 1440px max-width container with fluid horizontal padding
 │       ├── EditorialPageHero.tsx            # Shared hero component for informative/legal pages with useSeo, line-split heading & optional 3D slot
+│       ├── ErrorBoundary.tsx                # App/route/3D error boundary + fallback ("Sorry, this page didn't load" / "This page needs a refresh")
+│       ├── ErrorBoundary.test.ts            # Unit tests for error classification, reset rule and fallback markup
 │       ├── Eyebrow.tsx                      # Uppercase 0.2em tracked eyebrow label with optional accent dot
 │       ├── FilmGrain.tsx                    # Subtle fixed SVG noise overlay
 │       ├── FloatingWhatsAppButton.tsx       # Fixed bottom-right #25D366 WhatsApp button (auto-hides when modals/menus/sheets/banners open)

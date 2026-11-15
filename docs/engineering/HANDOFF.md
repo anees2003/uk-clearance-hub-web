@@ -1,11 +1,25 @@
 # HANDOFF — read this first
 
-Last updated: **14 Nov 2026**, end of Phase 4. Branch: `claude/hopeful-ride-igp39a`. Not pushed. No PR.
+Last updated: **15 Nov 2026**, Phase 5, **step 1 done**. Branch: `claude/hopeful-ride-igp39a`. Not pushed. No PR.
 
 ## Current state
-- **Phases 0–3 approved. Phase 4 is written and needs the owner's approval** before Phase 5 (implementation) starts.
-- **No product code has changed yet.** Only `docs/engineering/*`, `CLAUDE.md` and `.claude/launch.json` have changed.
-- **Baseline at `559ee08`:** `npm test` passes 60/60; `npm run lint` and `npm run build` pass; `npm audit` shows 1 low finding (esbuild).
+- **Phases 0–4 approved. Phase 5 (implementation) is in progress.**
+- **Done:** step 1, app and route error boundaries (commit "Step 1 - App and route error boundaries").
+  - `src/components/ui/ErrorBoundary.tsx` is used in 3 places:
+    - the App boundary in `App.tsx`
+    - the Route boundary around `<Outlet/>` in `Layout.tsx`, which resets on path change
+    - a **silent** boundary (`fallback={null}`) around the shared 3D canvas in `Layout.tsx`, which step 2 replaces with a visible panel
+  - Messages: "Sorry, this page didn't load", with Try again, Home, Ask on WhatsApp and Email us; and "This page needs a refresh", with Reload, for page code that failed to load.
+- **Verified in step 1:**
+  - **First load of `/home-living` with jsDelivr, githack and gstatic blocked:** the preloader exits in about 3 s and the route fallback shows. It does not hang.
+  - **`/about` blocked:** the page text stays.
+  - **"Needs a refresh":** checked on a production build with a page's code file removed.
+  - Checked at 1366px and 375px, dark and light, with all fallback text at 4.5:1 or more.
+- **Tests:** `npm test` passes 66/66; `npm run lint` and `npm run build` pass. `npm audit` still shows 1 low finding (esbuild, fixed in step 6).
+- **Findings carried into later steps** (written into `02-steps.md`):
+  - **Step 3:** `text-primary-contrast` generates no CSS, because the token isn't in `index.css` `@theme`.
+  - **Step 2:** add a maximum preloader wait for a *stalled* (not failed) 3D request.
+- **Browser testing tip:** the Playwright MCP's `browser_run_code_unsafe` with `page.context().route(...)` blocks hosts from the very first request. Use it for CDN-failure checks. Its output folder `.playwright-mcp/` must not be committed; delete it after use.
 - **Dev:** `npm run dev` serves http://localhost:3000. In the Claude desktop app, `.claude/launch.json` has a `dev` entry for the preview browser.
 - **Git identity:** none is configured on this machine. The Phase 0–3 commit used the repo owner's GitHub noreply identity via `git -c user.name=… -c user.email=…` for that commit only. Do the same, or ask the owner to set `git config`.
 
@@ -44,9 +58,11 @@ Last updated: **14 Nov 2026**, end of Phase 4. Branch: `claude/hopeful-ride-igp3
 - **Security:** scrypt via `node:crypto`; DB-backed rate limits; `__Host-` session cookie; CSRF token plus `Origin` check; upload re-encoding with GPS stripped; daily backups plus an off-site S3-compatible copy.
 
 ## Next step to do
-**Wait for the owner's Phase 4 approval.** Then start **step 1: App and route error boundaries**, in `02-steps.md`.
+**Step 2: 3D boundary and fallback**, in `02-steps.md`.
+- Show the owner the plan first and wait for approval, as with step 1.
+- It also takes over step 1's silent boundary in `Layout.tsx`, and adds the preloader maximum wait.
 
-Steps 1–8 and 39 need nothing from outside.
+Steps 2–8 and 39 need nothing from outside.
 
 Waiting on the owner:
 - the HDR and font downloads (steps 7 and 36)

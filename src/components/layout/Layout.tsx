@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { gsap, ScrollTrigger } from '../../animations/gsap';
 import { useLenis } from '../../animations/useLenis';
 import { useHasMountedSharedView } from '../../utils/studioProgressStore';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { FilmGrain } from '../ui/FilmGrain';
 import { FloatingWhatsAppButton } from '../ui/FloatingWhatsAppButton';
 import { Header } from './Header';
@@ -131,9 +132,14 @@ export const Layout: React.FC = () => {
       <ScrollToTop />
       <Header />
       {hasMountedSharedView && (
-        <Suspense fallback={null}>
-          <LazySharedViewCanvas />
-        </Suspense>
+        // The shared 3D canvas sits outside the page, so its errors would skip the
+        // route boundary. If it fails, render nothing and keep the page (step 2
+        // adds a visible "3D view unavailable" panel).
+        <ErrorBoundary fallback={null}>
+          <Suspense fallback={null}>
+            <LazySharedViewCanvas />
+          </Suspense>
+        </ErrorBoundary>
       )}
       <main
         ref={mainRef}
@@ -141,16 +147,18 @@ export const Layout: React.FC = () => {
         tabIndex={-1}
         className="flex-1 focus:outline-none"
       >
-        <Suspense
-          fallback={
-            <div
-              aria-hidden="true"
-              className="min-h-[65dvh] w-full bg-bg"
-            />
-          }
-        >
-          <Outlet />
-        </Suspense>
+        <ErrorBoundary resetKey={location.pathname}>
+          <Suspense
+            fallback={
+              <div
+                aria-hidden="true"
+                className="min-h-[65dvh] w-full bg-bg"
+              />
+            }
+          >
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <FloatingWhatsAppButton />
       <CookieConsentBanner />
